@@ -29,7 +29,7 @@ async function fetchLatestResults() {
         }
         
         // If local file fails, fetch from GitHub raw URL
-        const githubUrl = 'https://raw.githubusercontent.com/yourusername/satta-king-results/main/data/results.json';
+        const githubUrl = 'https://raw.githubusercontent.com/Yuvi33/sattaking786/main/data/results.json';
         const proxyUrl = CONFIG.apiEndpoint + encodeURIComponent(githubUrl);
         
         const githubResponse = await fetch(proxyUrl);
