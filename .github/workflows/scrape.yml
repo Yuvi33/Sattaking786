@@ -27,14 +27,13 @@ jobs:
     - name: 📦 Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: scraper/package-lock.json
+        node-version: '22'  # Updated from 20 to 22 (LTS version)
+        # Removed cache configuration that was causing the error
         
     - name: 📥 Install dependencies
       run: |
         cd scraper
-        npm ci
+        npm install --no-package-lock
         
     - name: 🚀 Run scraper
       run: |
