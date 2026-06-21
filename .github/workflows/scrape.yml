@@ -13,6 +13,10 @@ on:
     - cron: '55 17 * * *'
   workflow_dispatch: # Allow manual triggering
 
+# REQUIRED: Gives the workflow permission to push updates back to GitHub
+permissions:
+  contents: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -27,8 +31,7 @@ jobs:
     - name: 📦 Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22'  # Updated from 20 to 22 (LTS version)
-        # Removed cache configuration that was causing the error
+        node-version: '22' # Updated to Node 22 LTS (Node 20 is deprecated)
         
     - name: 📥 Install dependencies
       run: |
