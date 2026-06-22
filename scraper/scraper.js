@@ -31,19 +31,25 @@ function extractResults(html) {
     return results;
   }
 
-  // Search strictly within table rows to avoid grabbing random numbers from the page
+  // Search strictly within table rows
   $('tr').each((index, element) => {
-    const rowText = $(element).text().toUpperCase();
+    const tds = $(element).find('td');
+    if (tds.length === 0) return;
+
+    // Get the very first cell text (this contains the game name)
+    const firstCellText = tds.first().text().trim().toUpperCase();
     
     GAMES.forEach(game => {
-      if (rowText.includes(game.name)) {
+      // We do an EXACT match to ignore games like "Gali Bazar" or "Ghaziabad Din"
+      // It must start exactly with "GALIAT " or "GALI AT "
+      const exactMatch1 = game.name + 'AT ';  // e.g. "GALIAT "
+      const exactMatch2 = game.name + ' AT '; // e.g. "GALI AT "
+      
+      if (firstCellText.startsWith(exactMatch1) || firstCellText.startsWith(exactMatch2)) {
         const alreadyAdded = results.games.find(g => g.name === game.name);
         if (!alreadyAdded) {
           let oldResult = '--';
           let newResult = '--';
-          
-          // Get all table cells in this row
-          const tds = $(element).find('td');
           
           if (tds.length >= 3) {
             // Standard structure: [Name] [Yesterday] [Today]
@@ -57,11 +63,11 @@ function extractResults(html) {
             if (/^\d{2}$/.test(val2) || val2 === 'XX') newResult = val2;
           }
 
-          console.log(`✅ Found ${game.name}: Old=${oldResult}, New=${newResult}`);
+          console.log(`✅ Found Exact Match ${game.name}: Old=${oldResult}, New=${newResult}`);
           results.games.push({
             name: game.name,
             timing: game.timing,
-            result: newResult, // Keep for backward compatibility
+            result: newResult, // backward compatibility
             oldResult: oldResult,
             newResult: newResult,
             timestamp: new Date().toISOString()
