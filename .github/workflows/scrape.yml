@@ -16,7 +16,14 @@ on:
 # REQUIRED: Gives the workflow permission to push updates back to GitHub
 permissions:
   contents: write
-
+    - name: 🚀 Deploy to Cloudflare Pages
+      uses: cloudflare/pages-action@v1
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: sattaking786
+        directory: public
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   scrape:
     runs-on: ubuntu-latest
