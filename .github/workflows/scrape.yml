@@ -43,6 +43,7 @@ jobs:
       run: |
         cd scraper
         node scraper.js
+        node generate-sitemap.js
       env:
         NODE_ENV: production
         
@@ -50,7 +51,7 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add public/data/results.json public/data/historical/
+        git add public/data/results.json public/data/historical/ public/sitemap.xml
         git commit -m "🤖 Auto-update results - $(date -u '+%Y-%m-%d %H:%M:%S UTC')" || exit 0
         git push
 
