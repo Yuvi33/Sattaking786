@@ -2,15 +2,15 @@ name: Satta King Scraper
 
 on:
   schedule:
-    # Run 4 times a day (after each result is announced)
-    # Desawar: 05:00 AM IST -> 23:30 UTC (previous day)
-    - cron: '30 23 * * *'
-    # Faridabad: 06:00 PM IST -> 12:30 UTC
-    - cron: '30 12 * * *'
-    # Ghaziabad: 09:25 PM IST -> 15:55 UTC
-    - cron: '55 15 * * *'
-    # Gali: 11:25 PM IST -> 17:55 UTC
-    - cron: '55 17 * * *'
+    # Run 4 times a day, 10 mins AFTER results to ensure target site has updated
+    # Desawar: 05:00 AM IST -> 23:40 UTC (previous day)
+    - cron: '40 23 * * *'
+    # Faridabad: 06:00 PM IST -> 12:40 UTC
+    - cron: '40 12 * * *'
+    # Ghaziabad: 09:25 PM IST -> 16:05 UTC
+    - cron: '5 16 * * *'
+    # Gali: 11:25 PM IST -> 18:05 UTC
+    - cron: '5 18 * * *'
   workflow_dispatch: # Allow manual triggering
 
 # REQUIRED: Gives the workflow permission to push updates and create deployments
