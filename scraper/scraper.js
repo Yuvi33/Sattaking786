@@ -4,8 +4,10 @@ const fs = require('fs-extra');
 const path = require('path');
 
 const TARGET_URL = 'https://satta-king-fast.com/';
-const DATA_FILE = path.join(__dirname, '..', 'data', 'results.json');
-const HISTORICAL_DIR = path.join(__dirname, '..', 'data', 'historical');
+
+// Saving data INSIDE the public folder so Cloudflare can host it
+const DATA_FILE = path.join(__dirname, '..', 'public', 'data', 'results.json');
+const HISTORICAL_DIR = path.join(__dirname, '..', 'public', 'data', 'historical');
 
 const GAMES = [
   { name: 'DESAWAR', timing: '05:00 AM' },
@@ -31,17 +33,13 @@ function extractResults(html) {
     return results;
   }
 
-  // Get clean text from the whole page body
   const pageText = $('body').text().replace(/\s+/g, ' ').toUpperCase();
 
   GAMES.forEach(game => {
     const alreadyAdded = results.games.find(g => g.name === game.name);
     if (alreadyAdded) return;
 
-    // Escape the timing string for regex (e.g. "11:25 PM" -> "11\:25\s*PM")
     const escapedTiming = game.timing.replace(':', '\\:').replace(/\s+/g, '\\s*');
-    
-    // Regex: Look for "GALIAT 11:25 PM" specifically! This ignores "GALI BAZARAT 07:45 PM"
     const regex = new RegExp(`${game.name}\\s*AT\\s*${escapedTiming}.*?\\b(\\d{2}|XX)\\b.*?\\b(\\d{2}|XX)\\b`, 'i');
     const match = pageText.match(regex);
 
@@ -91,7 +89,7 @@ async function saveResults(results) {
 
     historicalData.sort((a, b) => a.date - b.date);
     await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
-    console.log('✅ Results saved successfully');
+    console.log('✅ Results saved successfully inside public/data/');
   } catch (error) {
     console.error('❌ Error saving results:', error);
   }
