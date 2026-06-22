@@ -1,11 +1,17 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const fs = require('fs');
 
 puppeteer.use(StealthPlugin());
+
+// Check if we are running on GitHub Actions (which has Chrome pre-installed)
+const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+const executablePath = isGitHubActions ? '/usr/bin/google-chrome' : undefined;
 
 async function createBrowser() {
   return await puppeteer.launch({
     headless: 'new',
+    executablePath: executablePath, // Use pre-installed Chrome to skip 150MB download!
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
