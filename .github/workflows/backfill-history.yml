@@ -1,0 +1,48 @@
+name: Backfill Historical Data
+
+on:
+  workflow_dispatch: # Manual trigger only
+    inputs:
+      year:
+        description: 'Year to scrape (e.g., 2023)'
+        required: true
+        default: '2023'
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60 # Give it 1 hour to finish a whole year
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 📦 Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        
+    - name: 📥 Install dependencies
+      run: |
+        cd scraper
+        npm install --no-package-lock
+        
+    - name: 🚀 Run Historical Scraper
+      run: |
+        cd scraper
+        node scraper-history.js ${{ github.event.inputs.year }}
+      env:
+        NODE_ENV: production
+        
+    - name: 📊 Commit and push historical data
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add public/data/historical/
+        git commit -m "📚 Backfill historical data for ${{ github.event.inputs.year }}" || exit 0
+        git push
