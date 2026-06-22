@@ -19,21 +19,29 @@ async function generateSitemap() {
     ];
 
     try {
+        console.log(`📂 Scanning directory: ${HISTORICAL_DIR}`);
         const files = await fs.readdir(HISTORICAL_DIR);
+        console.log(`✅ Found ${files.length} files in historical directory.`);
+        
+        let historyUrlsAdded = 0;
         
         files.forEach(file => {
             if (file.endsWith('.json')) {
-                // Extract year and month from filename (e.g., "2025-06.json")
                 const [year, month] = file.replace('.json', '').split('-');
-                
-                // Add a URL for each game for this specific month/year
-                GAMES.forEach(game => {
-                    urls.push(`${BASE_URL}/game.html?name=${game}&year=${year}&month=${month}`);
-                });
+                if (year && month) {
+                    GAMES.forEach(game => {
+                        urls.push(`${BASE_URL}/game.html?name=${game}&year=${year}&month=${month}`);
+                        historyUrlsAdded++;
+                    });
+                }
             }
         });
+        
+        console.log(`➕ Added ${historyUrlsAdded} historical URLs to sitemap.`);
+        
     } catch (e) {
-        console.log('⚠️ Historical directory not found yet. Generating base sitemap only.');
+        console.log('⚠️ Historical directory not found or empty. Generating base sitemap only.');
+        console.error('Error details:', e.message);
     }
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
@@ -45,7 +53,7 @@ async function generateSitemap() {
     xml += `</urlset>`;
 
     await fs.writeFile(SITEMAP_PATH, xml);
-    console.log(`✅ Sitemap generated successfully with ${urls.length} URLs!`);
+    console.log(`✅ Sitemap generated successfully with ${urls.length} total URLs!`);
 }
 
 generateSitemap().catch(console.error);
