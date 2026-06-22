@@ -1,7 +1,7 @@
 const CONFIG = {
     dataFile: './data/results.json',
     historicalDir: './data/historical',
-    refreshInterval: 300000,
+    refreshInterval: 60000, // Changed to 1 minute (60000ms) for faster auto-refresh on the page
     apiEndpoint: 'https://api.allorigins.win/raw?url='
 };
 
@@ -16,8 +16,10 @@ const elements = {
 
 async function fetchLatestResults() {
     try {
-        const response = await fetch(CONFIG.dataFile);
+        // Added ?v=${Date.now()} to bypass Cloudflare cache
+        const response = await fetch(`${CONFIG.dataFile}?v=${Date.now()}`);
         if (response.ok) return await response.json();
+        
         const githubUrl = 'https://raw.githubusercontent.com/Yuvi33/Sattaking786/main/public/data/results.json';
         const proxyUrl = CONFIG.apiEndpoint + encodeURIComponent(githubUrl);
         const githubResponse = await fetch(proxyUrl);
@@ -32,7 +34,8 @@ async function fetchHistoricalData() {
     try {
         const date = new Date();
         const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        const localPath = `${CONFIG.historicalDir}/${monthYear}.json`;
+        // Added ?v=${Date.now()} to bypass Cloudflare cache
+        const localPath = `${CONFIG.historicalDir}/${monthYear}.json?v=${Date.now()}`;
         const response = await fetch(localPath);
         if (response.ok) return await response.json();
         
@@ -55,7 +58,6 @@ function renderLiveResults(results) {
     
     results.games.forEach(game => {
         const cardWrapper = document.createElement('a');
-        // ADVANCED: Link to the specific game page
         cardWrapper.href = `/game.html?name=${game.name}`;
         cardWrapper.style.textDecoration = 'none';
         cardWrapper.style.color = 'inherit';
