@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Satta King Chart & Result History</title>
+    <meta name="description" content="View complete historical chart and results for Satta King. Data updated daily from 2015 to 2026.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container navbar">
+            <a href="/" class="logo">Satta King <span>Fast</span></a>
+            <nav class="nav-links">
+                <a href="/">Home</a>
+                <a href="/old-records.html">Old Records</a>
+                <a href="/about.html">About</a>
+                <a href="/disclaimer.html">Disclaimer</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1 id="gameTitle">Game History</h1>
+            <p>Complete historical data and result charts for this game.</p>
+        </div>
+    </section>
+
+    <main class="container">
+        <section id="game-history">
+            <h2 id="tableTitle">Monthly Chart</h2>
+            
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <select id="yearSelect" style="padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
+                    <option value="2026">2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                    <option value="2020">2020</option>
+                    <option value="2019">2019</option>
+                    <option value="2018">2018</option>
+                    <option value="2017">2017</option>
+                    <option value="2016">2016</option>
+                    <option value="2015">2015</option>
+                </select>
+                <select id="monthSelect" style="padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+
+            <div class="chart-container">
+                <table class="chart-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th id="gameHeader">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gameDataTable">
+                        <tr><td colspan="2" class="loading">Select a month to view data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="disclaimer-box" style="background: #fff3cd; border-left: 4px solid #ffeeba; padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
+            <h3 style="color: #856404; margin-bottom: 0.5rem;">⚠️ Disclaimer</h3>
+            <p style="color: #856404; font-size: 0.9rem;">This website is an independent media portal for informational and journalistic purposes only. We do not facilitate gambling. Please check local laws before participating.</p>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container footer-bottom">
+            <p>&copy; 2026 Satta King Fast Results. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple JS to handle the dynamic game page
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameName = urlParams.get('name') || 'GALI';
+        
+        document.getElementById('pageTitle').innerText = `${gameName} Satta King Chart & History`;
+        document.getElementById('gameTitle').innerText = `${gameName} Result History`;
+        document.getElementById('tableTitle').innerText = `${gameName} Monthly Chart`;
+        document.getElementById('gameHeader').innerText = `${gameName} Result`;
+
+        async function loadGameHistory() {
+            const year = document.getElementById('yearSelect').value;
+            const month = document.getElementById('monthSelect').value;
+            const tableBody = document.getElementById('gameDataTable');
+            tableBody.innerHTML = '<tr><td colspan="2" class="loading">Loading data...</td></tr>';
+
+            try {
+                const response = await fetch(`./data/historical/${year}-${month}.json`);
+                if (!response.ok) throw new Error('Data not found');
+                
+                const data = await response.json();
+                tableBody.innerHTML = '';
+                
+                data.sort((a, b) => a.date - b.date).forEach(item => {
+                    const gameData = item.games?.find(g => g.name === gameName);
+                    const result = gameData ? gameData.newResult : '--';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${item.date}</td><td style="font-weight:bold; color:#2563eb;">${result}</td>`;
+                    tableBody.appendChild(row);
+                });
+
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="2" class="loading">No data available for this month.</td></tr>';
+                }
+            } catch (error) {
+                tableBody.innerHTML = `<tr><td colspan="2" class="loading">No historical data found for ${month}/${year}.</td></tr>`;
+            }
+        }
+
+        document.getElementById('yearSelect').addEventListener('change', loadGameHistory);
+        document.getElementById('monthSelect').addEventListener('change', loadGameHistory);
+        
+        // Set current month/year as default
+        const now = new Date();
+        document.getElementById('yearSelect').value = now.getFullYear();
+        document.getElementById('monthSelect').value = String(now.getMonth() + 1).padStart(2, '0');
+        
+        loadGameHistory();
+    </script>
+</body>
+</html>
