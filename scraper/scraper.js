@@ -31,34 +31,60 @@ function extractResults(html) {
     return results;
   }
 
-  // Get clean text from the whole page body
-  const pageText = $('body').text().replace(/\s+/g, ' ').toUpperCase();
+  // Search strictly within table rows
+  $('tr').each((index, element) => {
+    const tds = $(element).find('td');
+    if (tds.length === 0) return;
 
-  GAMES.forEach(game => {
-    const alreadyAdded = results.games.find(g => g.name === game.name);
-    if (alreadyAdded) return;
-
-    // Regex: Find "GALIAT 11:25 PM" followed by any text, then capture a 2-digit number, then more text, then another 2-digit number or XX
-    const regex = new RegExp(`${game.name}\\s*AT\\s*\\d{1,2}:\\d{2}\\s*[AP]M.*?\\b(\\d{2}|XX)\\b.*?\\b(\\d{2}|XX)\\b`, 'i');
-    const match = pageText.match(regex);
-
-    if (match) {
-      const oldResult = match[1];
-      const newResult = match[2];
+    // Get the very first cell text (this contains the game name)
+    const firstCellText = tds.first().text().trim().toUpperCase();
+    
+    GAMES.forEach(game => {
+      // Check for exact matches like "GALIAT " or "GALI AT "
+      const exactMatch1 = game.name + 'AT ';  // e.g. "GALIAT "
+      const exactMatch2 = game.name + ' AT '; // e.g. "GALI AT "
       
-      console.log(`✅ Found Official ${game.name}: Old=${oldResult}, New=${newResult}`);
-      results.games.push({
-        name: game.name,
-        timing: game.timing,
-        result: newResult, 
-        oldResult: oldResult,
-        newResult: newResult,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      console.log(`⚠️ Could not find exact match for ${game.name}`);
-    }
+      if (firstCellText.startsWith(exactMatch1) || firstCellText.startsWith(exactMatch2)) {
+        const alreadyAdded = results.games.find(g => g.name === game.name);
+        if (!alreadyAdded) {
+          let oldResult = '--';
+          let newResult = '--';
+          
+          // Look at the remaining TDs in this row for numbers
+          const resultCells = [];
+          tds.slice(1).each((i, td) => {
+            const text = $(td).text().trim();
+            // ONLY collect cells that are exactly a 2-digit number or XX
+            // This ignores links, badges, and other text
+            if (/^\d{2}$/.test(text) || text === 'XX') {
+              resultCells.push(text);
+            }
+          });
+
+          if (resultCells.length >= 2) {
+            oldResult = resultCells[0];
+            newResult = resultCells[1];
+          } else if (resultCells.length === 1) {
+            newResult = resultCells[0];
+          }
+
+          console.log(`✅ Found Official ${game.name}: Old=${oldResult}, New=${newResult}`);
+          results.games.push({
+            name: game.name,
+            timing: game.timing,
+            result: newResult, 
+            oldResult: oldResult,
+            newResult: newResult,
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+    });
   });
+
+  if (results.games.length === 0) {
+    console.log("⚠️ No games found. The website HTML structure might have changed.");
+  }
 
   return results;
 }
