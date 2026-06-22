@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">Satta King Chart & Result History</title>
-    <meta name="description" content="View complete historical chart and results for Satta King. Data updated daily from 2015 to 2026.">
+    <title id="pageTitle">Satta King 786 Chart & Result History</title>
+    <meta name="description" content="View complete historical chart and results for Satta King 786. Data updated daily from 2015 to 2026.">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -85,23 +85,37 @@
 
     <footer>
         <div class="container footer-bottom">
-            <p>&copy; 2026 Satta King 786 Results. All Rights Reserved.</p>
+            <p>&copy; 2026 Satta King 786. All Rights Reserved.</p>
         </div>
     </footer>
 
     <script>
-        // Simple JS to handle the dynamic game page
+        // Read URL parameters for SEO
         const urlParams = new URLSearchParams(window.location.search);
         const gameName = urlParams.get('name') || 'GALI';
+        const yearParam = urlParams.get('year');
+        const monthParam = urlParams.get('month');
         
-        document.getElementById('pageTitle').innerText = `${gameName} Satta King Chart & History`;
+        document.getElementById('pageTitle').innerText = `${gameName} Satta King 786 Chart & History`;
         document.getElementById('gameTitle').innerText = `${gameName} Result History`;
         document.getElementById('tableTitle').innerText = `${gameName} Monthly Chart`;
         document.getElementById('gameHeader').innerText = `${gameName} Result`;
 
         async function loadGameHistory() {
-            const year = document.getElementById('yearSelect').value;
-            const month = document.getElementById('monthSelect').value;
+            let year = yearParam;
+            let month = monthParam;
+
+            // If no URL params, use current month/year
+            if (!year || !month) {
+                const now = new Date();
+                year = now.getFullYear();
+                month = String(now.getMonth() + 1).padStart(2, '0');
+            }
+
+            // Update dropdowns to match URL
+            document.getElementById('yearSelect').value = year;
+            document.getElementById('monthSelect').value = month;
+
             const tableBody = document.getElementById('gameDataTable');
             tableBody.innerHTML = '<tr><td colspan="2" class="loading">Loading data...</td></tr>';
 
@@ -129,13 +143,12 @@
             }
         }
 
-        document.getElementById('yearSelect').addEventListener('change', loadGameHistory);
-        document.getElementById('monthSelect').addEventListener('change', loadGameHistory);
-        
-        // Set current month/year as default
-        const now = new Date();
-        document.getElementById('yearSelect').value = now.getFullYear();
-        document.getElementById('monthSelect').value = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('yearSelect').addEventListener('change', function() {
+            window.location.href = `/game.html?name=${gameName}&year=${this.value}&month=${document.getElementById('monthSelect').value}`;
+        });
+        document.getElementById('monthSelect').addEventListener('change', function() {
+            window.location.href = `/game.html?name=${gameName}&year=${document.getElementById('yearSelect').value}&month=${this.value}`;
+        });
         
         loadGameHistory();
     </script>
