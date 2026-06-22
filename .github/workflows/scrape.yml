@@ -13,17 +13,10 @@ on:
     - cron: '55 17 * * *'
   workflow_dispatch: # Allow manual triggering
 
-# REQUIRED: Gives the workflow permission to push updates back to GitHub
+# REQUIRED: Gives the workflow permission to push updates to GitHub
 permissions:
   contents: write
-    - name: 🚀 Deploy to Cloudflare Pages
-      uses: cloudflare/pages-action@v1
-      with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        projectName: sattaking786
-        directory: public
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -38,7 +31,7 @@ jobs:
     - name: 📦 Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22' # Updated to Node 22 LTS (Node 20 is deprecated)
+        node-version: '22'
         
     - name: 📥 Install dependencies
       run: |
@@ -59,3 +52,12 @@ jobs:
         git add data/results.json data/historical/
         git commit -m "🤖 Auto-update results - $(date -u '+%Y-%m-%d %H:%M:%S UTC')" || exit 0
         git push
+
+    - name: 🚀 Deploy to Cloudflare Pages
+      uses: cloudflare/pages-action@v1
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: sattaking786
+        directory: public
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
