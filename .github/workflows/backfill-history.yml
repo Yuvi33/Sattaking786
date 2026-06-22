@@ -39,10 +39,13 @@ jobs:
       env:
         NODE_ENV: production
         
-    - name: 📊 Commit and push historical data
+    - name: 📊 Verify and Push data
       run: |
+        echo "Checking for downloaded files..."
+        ls -la public/data/historical/
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add public/data/historical/
-        git commit -m "📚 Backfill historical data for ${{ github.event.inputs.year }}" || exit 0
+        # Force add all json files in the historical folder
+        git add public/data/historical/*.json
+        git commit -m "📚 Backfill historical data for ${{ github.event.inputs.year }}" || echo "No changes to commit"
         git push
