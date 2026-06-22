@@ -14,6 +14,9 @@ const GAMES = [
   { name: 'GALI', timing: '11:25 PM' }
 ];
 
+// Copycat games we must ignore to get the correct official result
+const IGNORE_KEYWORDS = ['BAZAR', 'CHOTI', 'CHOTTA', 'NEW', 'DIN', 'NIGHT', 'MIX', 'GOLD', 'CITY', 'SUPER', 'OLD', 'EXPRESS', 'BANGALORE', 'PUNJAB', 'DELHI', 'MAA', 'SHRI', 'UDAAN', 'TAJ', 'ROYAL', 'AJUBA'];
+
 function extractResults(html) {
   const $ = cheerio.load(html);
   const results = {
@@ -33,41 +36,45 @@ function extractResults(html) {
 
   // Search strictly within table rows
   $('tr').each((index, element) => {
-    const tds = $(element).find('td');
-    if (tds.length === 0) return;
-
-    // Get the very first cell text (this contains the game name)
-    const firstCellText = tds.first().text().trim().toUpperCase();
+    const rowText = $(element).text().toUpperCase().trim();
     
     GAMES.forEach(game => {
-      // We do an EXACT match to ignore games like "Gali Bazar" or "Ghaziabad Din"
-      // It must start exactly with "GALIAT " or "GALI AT "
+      const alreadyAdded = results.games.find(g => g.name === game.name);
+      if (alreadyAdded) return;
+
+      // Check for exact matches like "GALIat " or "GALI at "
       const exactMatch1 = game.name + 'AT ';  // e.g. "GALIAT "
       const exactMatch2 = game.name + ' AT '; // e.g. "GALI AT "
       
-      if (firstCellText.startsWith(exactMatch1) || firstCellText.startsWith(exactMatch2)) {
-        const alreadyAdded = results.games.find(g => g.name === game.name);
-        if (!alreadyAdded) {
+      if (rowText.includes(exactMatch1) || rowText.includes(exactMatch2)) {
+        // Make sure it's not a copycat game
+        let isCopycat = false;
+        IGNORE_KEYWORDS.forEach(keyword => {
+          if (rowText.includes(keyword)) {
+            isCopycat = true;
+          }
+        });
+
+        if (!isCopycat) {
           let oldResult = '--';
           let newResult = '--';
           
+          const tds = $(element).find('td');
           if (tds.length >= 3) {
-            // Standard structure: [Name] [Yesterday] [Today]
             const val1 = tds.eq(1).text().trim();
             const val2 = tds.eq(2).text().trim();
             if (/^\d{2}$/.test(val1) || val1 === 'XX') oldResult = val1;
             if (/^\d{2}$/.test(val2) || val2 === 'XX') newResult = val2;
           } else if (tds.length === 2) {
-            // Fallback if only one result column exists
             const val2 = tds.eq(1).text().trim();
             if (/^\d{2}$/.test(val2) || val2 === 'XX') newResult = val2;
           }
 
-          console.log(`✅ Found Exact Match ${game.name}: Old=${oldResult}, New=${newResult}`);
+          console.log(`✅ Found Official ${game.name}: Old=${oldResult}, New=${newResult}`);
           results.games.push({
             name: game.name,
             timing: game.timing,
-            result: newResult, // backward compatibility
+            result: newResult, 
             oldResult: oldResult,
             newResult: newResult,
             timestamp: new Date().toISOString()
