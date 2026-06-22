@@ -13,9 +13,10 @@ on:
     - cron: '55 17 * * *'
   workflow_dispatch: # Allow manual triggering
 
-# REQUIRED: Gives the workflow permission to push updates to GitHub
+# REQUIRED: Gives the workflow permission to push updates and create deployments
 permissions:
   contents: write
+  deployments: write
 
 jobs:
   scrape:
