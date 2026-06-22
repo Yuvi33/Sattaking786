@@ -50,7 +50,7 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add data/results.json data/historical/
+        git add public/data/results.json public/data/historical/
         git commit -m "🤖 Auto-update results - $(date -u '+%Y-%m-%d %H:%M:%S UTC')" || exit 0
         git push
 
