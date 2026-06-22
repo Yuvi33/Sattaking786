@@ -31,43 +31,41 @@ function extractResults(html) {
     return results;
   }
 
-  // Search all table rows and divs that might contain the game
-  $('tr, div').each((index, element) => {
+  // Search strictly within table rows to avoid grabbing random numbers from the page
+  $('tr').each((index, element) => {
     const rowText = $(element).text().toUpperCase();
     
     GAMES.forEach(game => {
       if (rowText.includes(game.name)) {
         const alreadyAdded = results.games.find(g => g.name === game.name);
         if (!alreadyAdded) {
-          let resultFound = '--';
+          let oldResult = '--';
+          let newResult = '--';
           
-          // Look for a 2-digit number in the children
-          $(element).find('td, span, div, a').each((i, child) => {
-            const childText = $(child).text().trim();
-            // Match exactly 2 digits (like 56, 13, 89)
-            if (/^\d{2}$/.test(childText)) {
-              resultFound = childText;
-              return false; // break loop
-            }
+          // Get all table cells in this row
+          const tds = $(element).find('td');
+          
+          if (tds.length >= 3) {
+            // Standard structure: [Name] [Yesterday] [Today]
+            const val1 = tds.eq(1).text().trim();
+            const val2 = tds.eq(2).text().trim();
+            if (/^\d{2}$/.test(val1) || val1 === 'XX') oldResult = val1;
+            if (/^\d{2}$/.test(val2) || val2 === 'XX') newResult = val2;
+          } else if (tds.length === 2) {
+            // Fallback if only one result column exists
+            const val2 = tds.eq(1).text().trim();
+            if (/^\d{2}$/.test(val2) || val2 === 'XX') newResult = val2;
+          }
+
+          console.log(`✅ Found ${game.name}: Old=${oldResult}, New=${newResult}`);
+          results.games.push({
+            name: game.name,
+            timing: game.timing,
+            result: newResult, // Keep for backward compatibility
+            oldResult: oldResult,
+            newResult: newResult,
+            timestamp: new Date().toISOString()
           });
-
-          // If still not found, try the whole row text
-          if (resultFound === '--') {
-            const match = rowText.match(/\b(\d{2})\b/);
-            if (match && match[1]) {
-              resultFound = match[1];
-            }
-          }
-
-          if (resultFound !== '--') {
-            console.log(`✅ Found ${game.name}: ${resultFound}`);
-            results.games.push({
-              name: game.name,
-              timing: game.timing,
-              result: resultFound,
-              timestamp: new Date().toISOString()
-            });
-          }
         }
       }
     });
@@ -84,7 +82,6 @@ async function saveResults(results) {
   try {
     await fs.ensureDir(path.dirname(DATA_FILE));
     await fs.ensureDir(HISTORICAL_DIR);
-
     await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
     const date = new Date();
@@ -114,13 +111,10 @@ async function saveResults(results) {
 
 async function runScraper() {
   console.log('🚀 Starting Satta King scraper...');
-  
   try {
     const html = await bypassCloudflare(TARGET_URL);
     const results = extractResults(html);
-    
     await saveResults(results);
-    
     console.log(`✅ Scraping completed! Extracted ${results.games.length} games.`);
     return results;
   } catch (error) {
@@ -130,9 +124,7 @@ async function runScraper() {
 }
 
 if (require.main === module) {
-  runScraper()
-    .then(() => process.exit(0))
-    .catch(() => process.exit(1));
+  runScraper().then(() => process.exit(0)).catch(() => process.exit(1));
 }
 
 module.exports = { runScraper, extractResults, saveResults };
