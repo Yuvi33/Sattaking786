@@ -1,141 +1,95 @@
-// Configuration
 const CONFIG = {
-    dataFile: './data/results.json', // Now looks inside public/data/
+    dataFile: './data/results.json',
     historicalDir: './data/historical',
-    refreshInterval: 300000, // 5 minutes
-    apiEndpoint: 'https://api.allorigins.win/raw?url=' // CORS proxy
+    refreshInterval: 300000,
+    apiEndpoint: 'https://api.allorigins.win/raw?url='
 };
 
-// State management
 let liveResults = [];
 let historicalData = [];
 
-// DOM elements
 const elements = {
     liveResults: document.getElementById('liveResults'),
     historicalData: document.getElementById('historicalData'),
     lastUpdated: document.getElementById('lastUpdated')
 };
 
-/**
- * Fetches latest results
- */
 async function fetchLatestResults() {
     try {
-        // Try to fetch from local/live file first
         const response = await fetch(CONFIG.dataFile);
-        if (response.ok) {
-            return await response.json();
-        }
-        
-        // If local file fails, fetch from GitHub raw URL
+        if (response.ok) return await response.json();
         const githubUrl = 'https://raw.githubusercontent.com/Yuvi33/Sattaking786/main/public/data/results.json';
         const proxyUrl = CONFIG.apiEndpoint + encodeURIComponent(githubUrl);
-        
         const githubResponse = await fetch(proxyUrl);
-        if (!githubResponse.ok) {
-            throw new Error('Failed to fetch data');
-        }
-        
+        if (!githubResponse.ok) throw new Error('Failed to fetch');
         return await githubResponse.json();
     } catch (error) {
-        console.error('Error fetching latest results:', error);
-        
-        // Return mock data if fetch fails
-        return {
-            timestamp: new Date().toISOString(),
-            date: new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' }),
-            time: new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' }),
-            games: [
-                { name: 'DESAWAR', timing: '05:00 AM', newResult: '--', oldResult: '--' },
-                { name: 'FARIDABAD', timing: '06:00 PM', newResult: '--', oldResult: '--' },
-                { name: 'GHAZIABAD', timing: '09:25 PM', newResult: '--', oldResult: '--' },
-                { name: 'GALI', timing: '11:25 PM', newResult: '--', oldResult: '--' }
-            ]
-        };
+        return { games: [] };
     }
 }
 
-/**
- * Fetches historical data for the current month
- */
 async function fetchHistoricalData() {
     try {
         const date = new Date();
         const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        
-        // Try local/live file first
         const localPath = `${CONFIG.historicalDir}/${monthYear}.json`;
         const response = await fetch(localPath);
-        if (response.ok) {
-            return await response.json();
-        }
+        if (response.ok) return await response.json();
         
-        // Fallback to GitHub
         const githubUrl = `https://raw.githubusercontent.com/Yuvi33/Sattaking786/main/public/data/historical/${monthYear}.json`;
         const proxyUrl = CONFIG.apiEndpoint + encodeURIComponent(githubUrl);
-        
         const githubResponse = await fetch(proxyUrl);
-        if (!githubResponse.ok) {
-            throw new Error('Failed to fetch historical data');
-        }
-        
+        if (!githubResponse.ok) throw new Error('Failed to fetch history');
         return await githubResponse.json();
     } catch (error) {
-        console.error('Error fetching historical data:', error);
         return [];
     }
 }
 
-/**
- * Renders live results to the DOM
- */
 function renderLiveResults(results) {
     elements.liveResults.innerHTML = '';
-    
     if (!results || !results.games || results.games.length === 0) {
         elements.liveResults.innerHTML = '<div class="loading">No live results available. Waiting for next scrape...</div>';
         return;
     }
     
     results.games.forEach(game => {
-        const card = document.createElement('div');
-        card.className = 'result-card';
+        const cardWrapper = document.createElement('a');
+        // ADVANCED: Link to the specific game page
+        cardWrapper.href = `/game.html?name=${game.name}`;
+        cardWrapper.style.textDecoration = 'none';
+        cardWrapper.style.color = 'inherit';
         
-        card.innerHTML = `
-            <h3>${game.name}</h3>
-            <div class="timing">${game.timing}</div>
-            <div class="result-side-by-side">
-                <div class="result-box old">
-                    <span class="result-label">Yesterday</span>
-                    <span class="result-number">${game.oldResult || '--'}</span>
+        cardWrapper.innerHTML = `
+            <div class="result-card">
+                <h3>${game.name} <span style="font-size: 0.8rem; color: #6b7280;">(View Chart →)</span></h3>
+                <div class="timing">${game.timing}</div>
+                <div class="result-side-by-side">
+                    <div class="result-box old">
+                        <span class="result-label">Yesterday</span>
+                        <span class="result-number">${game.oldResult || '--'}</span>
+                    </div>
+                    <div class="result-box new">
+                        <span class="result-label">Today</span>
+                        <span class="result-number">${game.newResult || '--'}</span>
+                    </div>
                 </div>
-                <div class="result-box new">
-                    <span class="result-label">Today</span>
-                    <span class="result-number">${game.newResult || '--'}</span>
+                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 15px;">
+                    Updated: ${new Date(game.timestamp).toLocaleTimeString()}
                 </div>
-            </div>
-            <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 15px;">
-                Updated: ${new Date(game.timestamp).toLocaleTimeString()}
             </div>
         `;
-        
-        elements.liveResults.appendChild(card);
+        elements.liveResults.appendChild(cardWrapper);
     });
 }
 
-/**
- * Renders historical data to the table
- */
 function renderHistoricalData(historical) {
     elements.historicalData.innerHTML = '';
-    
     if (!historical || historical.length === 0) {
         elements.historicalData.innerHTML = '<tr><td colspan="5" class="loading">No historical data available</td></tr>';
         return;
     }
     
-    // Sort by date descending (most recent first)
     historical.sort((a, b) => b.date - a.date);
     
     historical.forEach(item => {
@@ -144,31 +98,22 @@ function renderHistoricalData(historical) {
         
         row.innerHTML = `
             <td>${item.date}</td>
-            <td>${getRes('DESAWAR')}</td>
-            <td>${getRes('FARIDABAD')}</td>
-            <td>${getRes('GHAZIABAD')}</td>
-            <td>${getRes('GALI')}</td>
+            <td><a href="/game.html?name=DESAWAR" style="text-decoration:none; color:#2563eb; font-weight:bold;">${getRes('DESAWAR')}</a></td>
+            <td><a href="/game.html?name=FARIDABAD" style="text-decoration:none; color:#2563eb; font-weight:bold;">${getRes('FARIDABAD')}</a></td>
+            <td><a href="/game.html?name=GHAZIABAD" style="text-decoration:none; color:#2563eb; font-weight:bold;">${getRes('GHAZIABAD')}</a></td>
+            <td><a href="/game.html?name=GALI" style="text-decoration:none; color:#2563eb; font-weight:bold;">${getRes('GALI')}</a></td>
         `;
         elements.historicalData.appendChild(row);
     });
 }
 
-/**
- * Updates the last updated timestamp
- */
 function updateLastUpdated() {
     const now = new Date();
     elements.lastUpdated.textContent = `Last updated: ${now.toLocaleString()}`;
 }
 
-/**
- * Initializes the application
- */
 async function init() {
-    console.log('🚀 Initializing Satta King Results app...');
-    
     try {
-        // Fetch initial data
         const [latestResults, historical] = await Promise.all([
             fetchLatestResults(),
             fetchHistoricalData()
@@ -177,34 +122,23 @@ async function init() {
         liveResults = latestResults;
         historicalData = historical;
         
-        // Render data
         renderLiveResults(latestResults);
         renderHistoricalData(historical);
         updateLastUpdated();
         
-        console.log('✅ App initialized successfully');
-        
-        // Set up auto-refresh
         setInterval(async () => {
-            console.log('🔄 Refreshing data...');
             const [freshResults, freshHistorical] = await Promise.all([
                 fetchLatestResults(),
                 fetchHistoricalData()
             ]);
-            
-            liveResults = freshResults;
-            historicalData = freshHistorical;
-            
             renderLiveResults(freshResults);
             renderHistoricalData(freshHistorical);
             updateLastUpdated();
         }, CONFIG.refreshInterval);
         
     } catch (error) {
-        console.error('❌ Initialization failed:', error);
-        elements.liveResults.innerHTML = '<div class="loading">Failed to load data. Please try again later.</div>';
+        elements.liveResults.innerHTML = '<div class="loading">Failed to load data.</div>';
     }
 }
 
-// Start the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
