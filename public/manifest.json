@@ -1,0 +1,16 @@
+{
+  "name": "Satta King Fast Results",
+  "short_name": "SattaKing",
+  "description": "Fastest Satta King Results for Desawar, Gali, Ghaziabad, Faridabad.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x2563eb/ffffff?text=SK",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
