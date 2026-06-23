@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Satta King 786 Combined Monthly Chart</title>
+    <meta name="description" content="View the combined Satta King 786 chart for Desawar, Faridabad, Ghaziabad, and Gali for any month.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container navbar">
+            <a href="/" class="logo">Satta King <span>786</span></a>
+            <nav class="nav-links">
+                <a href="/">Home</a>
+                <a href="/old-records.html">Old Records</a>
+                <a href="/about.html">About</a>
+                <a href="/disclaimer.html">Disclaimer</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1 id="chartTitle">Combined Monthly Chart</h1>
+            <p>Results for Desawar, Faridabad, Ghaziabad, and Gali. Click a game name to view its single history.</p>
+        </div>
+    </section>
+
+    <main class="container">
+        <section id="combined-chart">
+            <h2 id="tableTitle">Monthly Results</h2>
+            
+            <div class="chart-container">
+                <table class="chart-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th><a href="#" id="dswrLink" style="color:white; text-decoration:none;">Desawar</a></th>
+                            <th><a href="#" id="frbdLink" style="color:white; text-decoration:none;">Faridabad</a></th>
+                            <th><a href="#" id="gzbdLink" style="color:white; text-decoration:none;">Ghaziabad</a></th>
+                            <th><a href="#" id="galiLink" style="color:white; text-decoration:none;">Gali</a></th>
+                        </tr>
+                    </thead>
+                    <tbody id="combinedDataTable">
+                        <tr><td colspan="5" class="loading">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="disclaimer-box" style="background: #fff3cd; border-left: 4px solid #ffeeba; padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
+            <h3 style="color: #856404; margin-bottom: 0.5rem;">⚠️ Disclaimer</h3>
+            <p style="color: #856404; font-size: 0.9rem;">This website is an independent media portal for informational and journalistic purposes only. We do not facilitate gambling.</p>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container footer-bottom">
+            <p>&copy; 2026 Satta King 786. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const yearParam = urlParams.get('year');
+        const monthParam = urlParams.get('month');
+
+        async function loadCombinedChart() {
+            let year = yearParam;
+            let month = monthParam;
+
+            if (!year || !month) {
+                const now = new Date();
+                year = now.getFullYear();
+                month = String(now.getMonth() + 1).padStart(2, '0');
+            }
+
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('chartTitle').innerText = `Satta King 786 Chart - ${monthNames[parseInt(month) - 1]} ${year}`;
+            document.getElementById('tableTitle').innerText = `${monthNames[parseInt(month) - 1]} ${year} Results`;
+            document.title = `Satta King 786 Chart ${monthNames[parseInt(month) - 1]} ${year}`;
+
+            // Setup header links to single game pages
+            document.getElementById('dswrLink').href = `/game.html?name=DESAWAR&year=${year}&month=${month}`;
+            document.getElementById('frbdLink').href = `/game.html?name=FARIDABAD&year=${year}&month=${month}`;
+            document.getElementById('gzbdLink').href = `/game.html?name=GHAZIABAD&year=${year}&month=${month}`;
+            document.getElementById('galiLink').href = `/game.html?name=GALI&year=${year}&month=${month}`;
+
+            const tableBody = document.getElementById('combinedDataTable');
+            tableBody.innerHTML = '<tr><td colspan="5" class="loading">Loading data...</td></tr>';
+
+            try {
+                const response = await fetch(`./data/historical/${year}-${month}.json`);
+                if (!response.ok) throw new Error('Data not found');
+                
+                const data = await response.json();
+                tableBody.innerHTML = '';
+                
+                data.sort((a, b) => a.date - b.date).forEach(item => {
+                    const getRes = (name) => {
+                        const game = item.games?.find(g => g.name === name);
+                        return game ? game.newResult : '--';
+                    };
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.date}</td>
+                        <td><a href="/game.html?name=DESAWAR&year=${year}&month=${month}" style="text-decoration:none; color:#2563eb; font-weight:bold;">${getRes('DESAWAR')}</a></td>
+                        <td><a href="/game.html?name=FARIDABAD&year=${year}&month=${month}" style="text-decoration:none; color:#2563eb; font-weight:bold;">${getRes('FARIDABAD')}</a></td>
+                        <td><a href="/game.html?name=GHAZIABAD&year=${year}&month=${month}" style="text-decoration:none; color:#2563eb; font-weight:bold;">${getRes('GHAZIABAD')}</a></td>
+                        <td><a href="/game.html?name=GALI&year=${year}&month=${month}" style="text-decoration:none; color:#2563eb; font-weight:bold;">${getRes('GALI')}</a></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="loading">No data available for this month.</td></tr>';
+                }
+            } catch (error) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="loading">No historical data found for ${month}/${year}.</td></tr>`;
+            }
+        }
+
+        loadCombinedChart();
+    </script>
+</body>
+</html>
