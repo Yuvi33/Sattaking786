@@ -19,7 +19,6 @@ function extractResults(html) {
   const $ = cheerio.load(html);
   const results = {
     timestamp: new Date().toISOString(),
-    date: new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' }),
     time: new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' }),
     games: []
   };
@@ -69,16 +68,13 @@ async function saveResults(results) {
     await fs.ensureDir(HISTORICAL_DIR);
     await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
-    // 🛡️ BULLETPROOF IST DATE EXTRACTOR
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Kolkata',
-        year: 'numeric', month: '2-digit', day: '2-digit'
-    });
-    const parts = formatter.formatToParts(new Date());
-    const year = parts.find(p => p.type === 'year').value;
-    const month = parts.find(p => p.type === 'month').value;
-    const dayStr = parts.find(p => p.type === 'day').value;
-    const today = parseInt(dayStr, 10); // Forces it to be a number like 23
+    // 🛡️ BULLETPROOF IST DATE MATH (No strings, no parsing errors)
+    const now = new Date();
+    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // Add 5 hours 30 mins to UTC
+    
+    const today = istTime.getUTCDate(); // e.g., 23
+    const month = String(istTime.getUTCMonth() + 1).padStart(2, '0'); // e.g., "06"
+    const year = istTime.getUTCFullYear(); // e.g., 2026
     
     const monthYear = `${year}-${month}`;
     const historicalFile = path.join(HISTORICAL_DIR, `${monthYear}.json`);
@@ -88,29 +84,38 @@ async function saveResults(results) {
       historicalData = await fs.readJson(historicalFile);
     }
 
-    // 🧹 CLEANUP: Force all historical dates to be numbers (fixes the "6" bug)
+    // 🧹 CLEANUP: Fix any string dates (like "6/23/2026") to be exact day numbers
     historicalData = historicalData.map(item => {
-        let d = parseInt(item.date, 10);
-        if (isNaN(d) && typeof item.date === 'string' && item.date.includes('/')) {
-            const p = item.date.split('/');
-            d = parseInt(p[1], 10); // Get day from M/D/YYYY
+        let dayNum = item.date;
+        if (typeof item.date === 'string') {
+            if (item.date.includes('/')) {
+                const parts = item.date.split('/');
+                dayNum = parseInt(parts[1], 10); // M/D/YYYY -> parts[1] is the Day
+            } else {
+                dayNum = parseInt(item.date, 10);
+            }
         }
-        if (isNaN(d)) d = 0; 
-        return { ...item, date: d };
+        dayNum = parseInt(dayNum, 10);
+        if (isNaN(dayNum)) dayNum = 0;
+        return {
+            date: dayNum,
+            timestamp: item.timestamp,
+            games: item.games
+        };
     });
 
     // 🛡️ PERMANENT DUPLICATE FIX: Remove ANY existing entries for today's date
-    historicalData = historicalData.filter(item => item.date !== today);
+    historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
     
-    // Add today's fresh result
+    // Add today's fresh result explicitly
     historicalData.push({
-        date: today,
+        date: Number(today),
         timestamp: results.timestamp,
         games: results.games
     });
 
     // Sort by date
-    historicalData.sort((a, b) => a.date - b.date);
+    historicalData.sort((a, b) => Number(a.date) - Number(b.date));
 
     await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
     console.log(`✅ Results saved successfully for ${monthYear}-${today}. (Duplicates removed & data cleaned)`);
