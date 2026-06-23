@@ -5,7 +5,6 @@ const path = require('path');
 
 const TARGET_URL = 'https://satta-king-fast.com/';
 
-// Saving data INSIDE the public folder so Cloudflare can host it
 const DATA_FILE = path.join(__dirname, '..', 'public', 'data', 'results.json');
 const HISTORICAL_DIR = path.join(__dirname, '..', 'public', 'data', 'historical');
 
@@ -70,13 +69,18 @@ async function saveResults(results) {
     await fs.ensureDir(HISTORICAL_DIR);
     await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
-    // Calculate exact IST date to prevent timezone duplicates
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 mins in ms
-    const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
+    // 🛡️ BULLETPROOF IST DATE EXTRACTOR
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    });
+    const parts = formatter.formatToParts(new Date());
+    const year = parts.find(p => p.type === 'year').value;
+    const month = parts.find(p => p.type === 'month').value;
+    const dayStr = parts.find(p => p.type === 'day').value;
+    const today = parseInt(dayStr, 10); // Forces it to be a number like 23
     
-    const today = istDate.getDate();
-    const monthYear = `${istDate.getFullYear()}-${(istDate.getMonth() + 1).toString().padStart(2, '0')}`;
+    const monthYear = `${year}-${month}`;
     const historicalFile = path.join(HISTORICAL_DIR, `${monthYear}.json`);
 
     let historicalData = [];
@@ -84,35 +88,32 @@ async function saveResults(results) {
       historicalData = await fs.readJson(historicalFile);
     }
 
-    // 🛠️ CLEANUP OLD BAD DATA: Force all dates to be numbers (fixes previous bug)
+    // 🧹 CLEANUP: Force all historical dates to be numbers (fixes the "6" bug)
     historicalData = historicalData.map(item => {
-        let dayNum = parseInt(item.date, 10);
-        if (isNaN(dayNum) && typeof item.date === 'string' && item.date.includes('/')) {
-            const parts = item.date.split('/');
-            dayNum = parseInt(parts[1], 10); // Extract day from "M/D/YYYY"
+        let d = parseInt(item.date, 10);
+        if (isNaN(d) && typeof item.date === 'string' && item.date.includes('/')) {
+            const p = item.date.split('/');
+            d = parseInt(p[1], 10); // Get day from M/D/YYYY
         }
-        return {
-            date: dayNum,
-            timestamp: item.timestamp,
-            games: item.games
-        };
+        if (isNaN(d)) d = 0; 
+        return { ...item, date: d };
     });
 
     // 🛡️ PERMANENT DUPLICATE FIX: Remove ANY existing entries for today's date
-    historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
+    historicalData = historicalData.filter(item => item.date !== today);
     
-    // Add today's fresh result explicitly to avoid spread overwriting the date
+    // Add today's fresh result
     historicalData.push({
-        date: Number(today),
+        date: today,
         timestamp: results.timestamp,
         games: results.games
     });
 
     // Sort by date
-    historicalData.sort((a, b) => Number(a.date) - Number(b.date));
+    historicalData.sort((a, b) => a.date - b.date);
 
     await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
-    console.log(`✅ Results saved successfully for ${monthYear}-${today} (Duplicates removed & data cleaned)`);
+    console.log(`✅ Results saved successfully for ${monthYear}-${today}. (Duplicates removed & data cleaned)`);
   } catch (error) {
     console.error('❌ Error saving results:', error);
   }
