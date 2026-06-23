@@ -84,17 +84,35 @@ async function saveResults(results) {
       historicalData = await fs.readJson(historicalFile);
     }
 
-    // PERMANENT DUPLICATE FIX: Remove ANY existing entries for today's date
-    historicalData = historicalData.filter(item => String(item.date) !== String(today));
+    // 🛠️ CLEANUP OLD BAD DATA: Force all dates to be numbers (fixes previous bug)
+    historicalData = historicalData.map(item => {
+        let dayNum = parseInt(item.date, 10);
+        if (isNaN(dayNum) && typeof item.date === 'string' && item.date.includes('/')) {
+            const parts = item.date.split('/');
+            dayNum = parseInt(parts[1], 10); // Extract day from "M/D/YYYY"
+        }
+        return {
+            date: dayNum,
+            timestamp: item.timestamp,
+            games: item.games
+        };
+    });
+
+    // 🛡️ PERMANENT DUPLICATE FIX: Remove ANY existing entries for today's date
+    historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
     
-    // Add today's fresh result
-    historicalData.push({ date: today, ...results });
+    // Add today's fresh result explicitly to avoid spread overwriting the date
+    historicalData.push({
+        date: Number(today),
+        timestamp: results.timestamp,
+        games: results.games
+    });
 
     // Sort by date
     historicalData.sort((a, b) => Number(a.date) - Number(b.date));
 
     await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
-    console.log(`✅ Results saved successfully for ${monthYear}-${today} (Duplicates removed)`);
+    console.log(`✅ Results saved successfully for ${monthYear}-${today} (Duplicates removed & data cleaned)`);
   } catch (error) {
     console.error('❌ Error saving results:', error);
   }
