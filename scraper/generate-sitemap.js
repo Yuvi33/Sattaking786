@@ -1,8 +1,10 @@
 const fs = require('fs-extra');
 const path = require('path');
 
-const HISTORICAL_DIR = path.join(__dirname, '..', 'public', 'data', 'historical');
-const SITEMAP_PATH = path.join(__dirname, '..', 'public', 'sitemap.xml');
+// Use GitHub's official workspace path if available, otherwise default to local
+const ROOT_DIR = process.env.GITHUB_WORKSPACE || path.join(__dirname, '..');
+const HISTORICAL_DIR = path.join(ROOT_DIR, 'public', 'data', 'historical');
+const SITEMAP_PATH = path.join(ROOT_DIR, 'public', 'sitemap.xml');
 const BASE_URL = 'https://sattaking786.pages.dev';
 const GAMES = ['DESAWAR', 'FARIDABAD', 'GHAZIABAD', 'GALI'];
 
