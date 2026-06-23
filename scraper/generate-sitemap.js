@@ -1,7 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
 
-// Use GitHub's official workspace path if available, otherwise default to local
 const ROOT_DIR = process.env.GITHUB_WORKSPACE || path.join(__dirname, '..');
 const HISTORICAL_DIR = path.join(ROOT_DIR, 'public', 'data', 'historical');
 const SITEMAP_PATH = path.join(ROOT_DIR, 'public', 'sitemap.xml');
@@ -32,13 +31,16 @@ async function generateSitemap() {
         
         files.forEach(file => {
             if (file.endsWith('.json')) {
-                const ym = file.replace('.json', ''); // e.g., "2025-06"
+                const ym = file.replace('.json', '');
                 const [year, month] = ym.split('-');
                 if (year && month) {
                     availableDates.push(ym);
                     
+                    // Add Combined Chart URL
+                    urls.push(`${BASE_URL}/combined-chart.html?year=${year}&amp;month=${month}`);
+                    
+                    // Add Single Game URLs
                     GAMES.forEach(game => {
-                        // XML requires & to be written as &amp;
                         urls.push(`${BASE_URL}/game.html?name=${game}&amp;year=${year}&amp;month=${month}`);
                         historyUrlsAdded++;
                     });
@@ -53,7 +55,6 @@ async function generateSitemap() {
         console.error('Error details:', e.message);
     }
 
-    // 1. Generate Sitemap XML
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
     urls.forEach(url => {
         xml += `  <url>\n    <loc>${url}</loc>\n    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n    <priority>0.8</priority>\n  </url>\n`;
@@ -62,8 +63,6 @@ async function generateSitemap() {
     await fs.writeFile(SITEMAP_PATH, xml);
     console.log(`✅ Sitemap generated with ${urls.length} URLs!`);
 
-    // 2. Generate Manifest JSON for the frontend UI
-    // Sort dates descending (newest first)
     availableDates.sort().reverse();
     await fs.writeJson(MANIFEST_PATH, availableDates, { spaces: 2 });
     console.log(`✅ Manifest generated with ${availableDates.length} months!`);
