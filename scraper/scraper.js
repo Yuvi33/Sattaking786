@@ -9,10 +9,10 @@ const DATA_FILE = path.join(__dirname, '..', 'public', 'data', 'results.json');
 const HISTORICAL_DIR = path.join(__dirname, '..', 'public', 'data', 'historical');
 
 const GAMES = [
-  { name: 'DESAWAR', timing: '05:00 AM' },
-  { name: 'FARIDABAD', timing: '06:00 PM' },
-  { name: 'GHAZIABAD', timing: '09:25 PM' },
-  { name: 'GALI', timing: '11:25 PM' }
+  { name: 'DESAWAR',    timing: '05:00 AM' },
+  { name: 'FARIDABAD',  timing: '06:00 PM' },
+  { name: 'GHAZIABAD',  timing: '09:25 PM' },
+  { name: 'GALI',       timing: '11:25 PM' }
 ];
 
 function extractResults(html) {
@@ -26,8 +26,8 @@ function extractResults(html) {
   const pageTitle = $('title').text();
   console.log(`📄 Page Title extracted: "${pageTitle}"`);
 
-  if (pageTitle.includes("Just a moment") || pageTitle.includes("Attention Required")) {
-    console.error("❌ ERROR: Cloudflare block still active.");
+  if (pageTitle.includes('Just a moment') || pageTitle.includes('Attention Required')) {
+    console.error('❌ ERROR: Cloudflare block still active.');
     return results;
   }
 
@@ -38,24 +38,27 @@ function extractResults(html) {
     if (alreadyAdded) return;
 
     const escapedTiming = game.timing.replace(':', '\\:').replace(/\s+/g, '\\s*');
-    const regex = new RegExp(`${game.name}\\s*AT\\s*${escapedTiming}.*?\\b(\\d{2}|XX)\\b.*?\\b(\\d{2}|XX)\\b`, 'i');
+    const regex = new RegExp(
+      `${game.name}\\s*AT\\s*${escapedTiming}.*?\\b(\\d{2}|XX)\\b.*?\\b(\\d{2}|XX)\\b`,
+      'i'
+    );
     const match = pageText.match(regex);
 
     if (match) {
       const oldResult = match[1];
       const newResult = match[2];
-      
+
       console.log(`✅ Found Official ${game.name} (${game.timing}): Old=${oldResult}, New=${newResult}`);
       results.games.push({
-        name: game.name,
-        timing: game.timing,
-        result: newResult, 
+        name:      game.name,
+        timing:    game.timing,
+        result:    newResult,
         oldResult: oldResult,
         newResult: newResult,
         timestamp: new Date().toISOString()
       });
     } else {
-      console.log(`⚠️ Could not find exact match for ${game.name} at ${game.timing}`);
+      console.log(`⚠️  Could not find exact match for ${game.name} at ${game.timing}`);
     }
   });
 
@@ -70,13 +73,13 @@ async function saveResults(results) {
 
     // 🛡️ BULLETPROOF IST DATE MATH (No strings, no parsing errors)
     const now = new Date();
-    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // Add 5 hours 30 mins to UTC
-    
-    const today = istTime.getUTCDate(); // e.g., 23
-    const month = String(istTime.getUTCMonth() + 1).padStart(2, '0'); // e.g., "06"
-    const year = istTime.getUTCFullYear(); // e.g., 2026
-    
-    const monthYear = `${year}-${month}`;
+    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // UTC + 5:30
+
+    const today = istTime.getUTCDate();                                  // e.g. 23
+    const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');   // e.g. "06"
+    const year  = istTime.getUTCFullYear();                              // e.g. 2026
+
+    const monthYear     = `${year}-${month}`;
     const historicalFile = path.join(HISTORICAL_DIR, `${monthYear}.json`);
 
     let historicalData = [];
@@ -84,41 +87,49 @@ async function saveResults(results) {
       historicalData = await fs.readJson(historicalFile);
     }
 
-    // 🧹 CLEANUP: Fix any string dates (like "6/23/2026") to be exact day numbers
+    // 🧹 CLEANUP: Normalize ALL date fields using the ISO timestamp.
+    //    Old records may have been saved with ambiguous string dates like
+    //    "23/6/2026" (D/M/YYYY — Indian format) or "6/23/2026" (M/D/YYYY).
+    //    Parsing parts[1] from either format gives the wrong answer for one of them.
+    //    The ISO timestamp ("2026-06-23T...Z") is always unambiguous, so we
+    //    derive the day from it using the same IST offset math used for `today`.
     historicalData = historicalData.map(item => {
-        let dayNum = item.date;
-        if (typeof item.date === 'string') {
-            if (item.date.includes('/')) {
-                const parts = item.date.split('/');
-                dayNum = parseInt(parts[1], 10); // M/D/YYYY -> parts[1] is the Day
-            } else {
-                dayNum = parseInt(item.date, 10);
-            }
-        }
-        dayNum = parseInt(dayNum, 10);
-        if (isNaN(dayNum)) dayNum = 0;
-        return {
-            date: dayNum,
-            timestamp: item.timestamp,
-            games: item.games
-        };
+      let dayNum;
+
+      if (item.timestamp) {
+        // Source of truth: ISO 8601 timestamp → convert to IST → extract day
+        const tsDate  = new Date(item.timestamp);
+        const istDate = new Date(tsDate.getTime() + (5.5 * 60 * 60 * 1000));
+        dayNum = istDate.getUTCDate();
+      } else {
+        // Fallback for records that somehow have no timestamp (already a number)
+        dayNum = parseInt(item.date, 10);
+      }
+
+      if (isNaN(dayNum)) dayNum = 0;
+
+      return {
+        date:      dayNum,
+        timestamp: item.timestamp,
+        games:     item.games
+      };
     });
 
-    // 🛡️ PERMANENT DUPLICATE FIX: Remove ANY existing entries for today's date
+    // 🛡️ DUPLICATE FIX: Remove ANY existing entries for today before re-adding
     historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
-    
-    // Add today's fresh result explicitly
+
+    // Add today's fresh result
     historicalData.push({
-        date: Number(today),
-        timestamp: results.timestamp,
-        games: results.games
+      date:      Number(today),
+      timestamp: results.timestamp,
+      games:     results.games
     });
 
-    // Sort by date
+    // Keep entries sorted by day
     historicalData.sort((a, b) => Number(a.date) - Number(b.date));
 
     await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
-    console.log(`✅ Results saved successfully for ${monthYear}-${today}. (Duplicates removed & data cleaned)`);
+    console.log(`✅ Results saved for ${monthYear}-${today}. (Duplicates removed & data cleaned)`);
   } catch (error) {
     console.error('❌ Error saving results:', error);
   }
@@ -127,7 +138,7 @@ async function saveResults(results) {
 async function runScraper() {
   console.log('🚀 Starting Satta King scraper...');
   try {
-    const html = await bypassCloudflare(TARGET_URL);
+    const html    = await bypassCloudflare(TARGET_URL);
     const results = extractResults(html);
     await saveResults(results);
     console.log(`✅ Scraping completed! Extracted ${results.games.length} games.`);
