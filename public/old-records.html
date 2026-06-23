@@ -35,19 +35,11 @@
             <h2>Historical Satta King 786 Charts Archive</h2>
             <p>Welcome to the <strong>Satta King 786 Old Records</strong> archive. Here, players and researchers can access historical data for the most popular Satta King games. Our database contains month-by-month charts dating back to 2015. Analyzing old Satta King 786 charts is a common practice for enthusiasts who look for historical number patterns and trends.</p>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin: 2rem 0;">
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2026 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2025 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2024 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2023 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2022 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2021 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2020 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2019 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2018 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2017 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2016 Charts</a>
-                <a href="/" style="background: #2563eb; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">2015 Charts</a>
+            <p>Click on any month below to view the detailed result chart for that period. Each month contains data for all 4 major games.</p>
+            
+            <!-- Dynamic Links Container -->
+            <div id="historical-links-container" style="margin: 2rem 0;">
+                <p style="text-align: center; color: #6b7280;">Loading historical records...</p>
             </div>
         </section>
 
@@ -92,5 +84,72 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        // Fetch the manifest and build the UI dynamically
+        async function loadHistoricalLinks() {
+            const container = document.getElementById('historical-links-container');
+            try {
+                // Cache busting added
+                const response = await fetch('./data/manifest.json?v=' + Date.now());
+                if (!response.ok) throw new Error('Manifest not found');
+                
+                const dates = await response.json();
+                container.innerHTML = '';
+
+                // Group by year
+                const grouped = {};
+                dates.forEach(ym => {
+                    const [year, month] = ym.split('-');
+                    if (!grouped[year]) grouped[year] = [];
+                    grouped[year].push(month);
+                });
+
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                
+                // Sort years descending (2026, 2025, etc.)
+                const sortedYears = Object.keys(grouped).sort((a, b) => b - a);
+
+                sortedYears.forEach(year => {
+                    const yearDiv = document.createElement('div');
+                    yearDiv.style.marginBottom = '2rem';
+                    
+                    yearDiv.innerHTML = `<h3 style="color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; display: inline-block; margin-bottom: 15px;">${year} Records</h3>`;
+                    
+                    const grid = document.createElement('div');
+                    grid.style.display = 'grid';
+                    grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(150px, 1fr))';
+                    grid.style.gap = '10px';
+
+                    // Sort months descending within the year
+                    grouped[year].sort((a, b) => b - a).forEach(month => {
+                        const link = document.createElement('a');
+                        // Point to Desawar by default for the month, users can switch games on that page
+                        link.href = `/game.html?name=DESAWAR&year=${year}&month=${month}`;
+                        link.innerText = `${monthNames[parseInt(month) - 1]} ${year}`;
+                        link.style.background = '#2563eb';
+                        link.style.color = 'white';
+                        link.style.padding = '12px';
+                        link.style.textAlign = 'center';
+                        link.style.borderRadius = '8px';
+                        link.style.textDecoration = 'none';
+                        link.style.fontWeight = 'bold';
+                        link.style.fontSize = '0.9rem';
+                        link.style.display = 'block';
+                        
+                        grid.appendChild(link);
+                    });
+
+                    yearDiv.appendChild(grid);
+                    container.appendChild(yearDiv);
+                });
+
+            } catch (error) {
+                container.innerHTML = '<p style="color: red;">Failed to load historical records. Please run the scraper workflow first.</p>';
+            }
+        }
+
+        loadHistoricalLinks();
+    </script>
 </body>
 </html>
