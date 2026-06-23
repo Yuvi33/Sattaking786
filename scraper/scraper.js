@@ -27,8 +27,7 @@ function extractResults(html) {
   console.log(`📄 Page Title extracted: "${pageTitle}"`);
 
   if (pageTitle.includes('Just a moment') || pageTitle.includes('Attention Required')) {
-    console.error('❌ ERROR: Cloudflare block still active.');
-    return results;
+    throw new Error('Cloudflare block detected. Triggering retry...');
   }
 
   const pageText = $('body').text().replace(/\s+/g, ' ').toUpperCase();
@@ -69,15 +68,37 @@ async function saveResults(results) {
   try {
     await fs.ensureDir(path.dirname(DATA_FILE));
     await fs.ensureDir(HISTORICAL_DIR);
+
+    // 🧠 SMART RETRY LOGIC: Compare with existing results
+    let existingData = { games: [] };
+    if (await fs.pathExists(DATA_FILE)) {
+      existingData = await fs.readJson(DATA_FILE);
+    }
+
+    let hasUpdated = false;
+    for (const newGame of results.games) {
+      const oldGame = existingData.games.find(g => g.name === newGame.name);
+      // If it's a new game, or if the result is different from what we have saved
+      if (!oldGame || oldGame.newResult !== newGame.newResult) {
+        hasUpdated = true;
+        break;
+      }
+    }
+
+    // If no results changed, trigger a retry by throwing an error
+    if (!hasUpdated && results.games.length > 0) {
+      throw new Error('Results have not updated on the original website yet. Triggering retry...');
+    }
+
     await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
-    // 🛡️ BULLETPROOF IST DATE MATH (No strings, no parsing errors)
+    // 🛡️ BULLETPROOF IST DATE MATH
     const now = new Date();
-    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // UTC + 5:30
+    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); 
 
-    const today = istTime.getUTCDate();                                  // e.g. 23
-    const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');   // e.g. "06"
-    const year  = istTime.getUTCFullYear();                              // e.g. 2026
+    const today = istTime.getUTCDate();                                  
+    const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');   
+    const year  = istTime.getUTCFullYear();                              
 
     const monthYear     = `${year}-${month}`;
     const historicalFile = path.join(HISTORICAL_DIR, `${monthYear}.json`);
@@ -87,51 +108,34 @@ async function saveResults(results) {
       historicalData = await fs.readJson(historicalFile);
     }
 
-    // 🧹 CLEANUP: Normalize ALL date fields using the ISO timestamp.
-    //    Old records may have been saved with ambiguous string dates like
-    //    "23/6/2026" (D/M/YYYY — Indian format) or "6/23/2026" (M/D/YYYY).
-    //    Parsing parts[1] from either format gives the wrong answer for one of them.
-    //    The ISO timestamp ("2026-06-23T...Z") is always unambiguous, so we
-    //    derive the day from it using the same IST offset math used for `today`.
     historicalData = historicalData.map(item => {
       let dayNum;
-
       if (item.timestamp) {
-        // Source of truth: ISO 8601 timestamp → convert to IST → extract day
         const tsDate  = new Date(item.timestamp);
         const istDate = new Date(tsDate.getTime() + (5.5 * 60 * 60 * 1000));
         dayNum = istDate.getUTCDate();
       } else {
-        // Fallback for records that somehow have no timestamp (already a number)
         dayNum = parseInt(item.date, 10);
       }
-
       if (isNaN(dayNum)) dayNum = 0;
-
-      return {
-        date:      dayNum,
-        timestamp: item.timestamp,
-        games:     item.games
-      };
+      return { date: dayNum, timestamp: item.timestamp, games: item.games };
     });
 
-    // 🛡️ DUPLICATE FIX: Remove ANY existing entries for today before re-adding
     historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
-
-    // Add today's fresh result
+    
     historicalData.push({
       date:      Number(today),
       timestamp: results.timestamp,
       games:     results.games
     });
 
-    // Keep entries sorted by day
     historicalData.sort((a, b) => Number(a.date) - Number(b.date));
 
     await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
     console.log(`✅ Results saved for ${monthYear}-${today}. (Duplicates removed & data cleaned)`);
   } catch (error) {
-    console.error('❌ Error saving results:', error);
+    // Re-throw the error so the GitHub Action knows to retry
+    throw error;
   }
 }
 
@@ -144,7 +148,7 @@ async function runScraper() {
     console.log(`✅ Scraping completed! Extracted ${results.games.length} games.`);
     return results;
   } catch (error) {
-    console.error('❌ Scraping failed:', error);
+    console.error('❌ Scraping failed:', error.message);
     throw error;
   }
 }
