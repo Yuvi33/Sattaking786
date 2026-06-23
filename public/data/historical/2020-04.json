@@ -1,0 +1,632 @@
+[
+  {
+    "date": 1,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "XX"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "26"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "94"
+      },
+      {
+        "name": "GALI",
+        "newResult": "60"
+      }
+    ]
+  },
+  {
+    "date": 2,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "81"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "33"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "31"
+      },
+      {
+        "name": "GALI",
+        "newResult": "25"
+      }
+    ]
+  },
+  {
+    "date": 3,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "82"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "26"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "62"
+      },
+      {
+        "name": "GALI",
+        "newResult": "46"
+      }
+    ]
+  },
+  {
+    "date": 4,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "84"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "02"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "56"
+      },
+      {
+        "name": "GALI",
+        "newResult": "51"
+      }
+    ]
+  },
+  {
+    "date": 5,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "74"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "11"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "97"
+      },
+      {
+        "name": "GALI",
+        "newResult": "10"
+      }
+    ]
+  },
+  {
+    "date": 6,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "20"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "92"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "37"
+      },
+      {
+        "name": "GALI",
+        "newResult": "77"
+      }
+    ]
+  },
+  {
+    "date": 7,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "02"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "21"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "11"
+      },
+      {
+        "name": "GALI",
+        "newResult": "68"
+      }
+    ]
+  },
+  {
+    "date": 8,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "06"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "86"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "95"
+      },
+      {
+        "name": "GALI",
+        "newResult": "20"
+      }
+    ]
+  },
+  {
+    "date": 9,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "07"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "07"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "87"
+      },
+      {
+        "name": "GALI",
+        "newResult": "98"
+      }
+    ]
+  },
+  {
+    "date": 10,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "60"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "47"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "38"
+      },
+      {
+        "name": "GALI",
+        "newResult": "33"
+      }
+    ]
+  },
+  {
+    "date": 11,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "86"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "39"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "73"
+      },
+      {
+        "name": "GALI",
+        "newResult": "22"
+      }
+    ]
+  },
+  {
+    "date": 12,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "00"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "06"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "84"
+      },
+      {
+        "name": "GALI",
+        "newResult": "36"
+      }
+    ]
+  },
+  {
+    "date": 13,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "42"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "41"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "80"
+      },
+      {
+        "name": "GALI",
+        "newResult": "80"
+      }
+    ]
+  },
+  {
+    "date": 14,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "37"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "89"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "77"
+      },
+      {
+        "name": "GALI",
+        "newResult": "39"
+      }
+    ]
+  },
+  {
+    "date": 15,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "58"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "23"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "13"
+      },
+      {
+        "name": "GALI",
+        "newResult": "07"
+      }
+    ]
+  },
+  {
+    "date": 16,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "73"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "32"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "59"
+      },
+      {
+        "name": "GALI",
+        "newResult": "94"
+      }
+    ]
+  },
+  {
+    "date": 17,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "35"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "97"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "29"
+      },
+      {
+        "name": "GALI",
+        "newResult": "55"
+      }
+    ]
+  },
+  {
+    "date": 18,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "79"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "96"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "98"
+      },
+      {
+        "name": "GALI",
+        "newResult": "93"
+      }
+    ]
+  },
+  {
+    "date": 19,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "36"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "02"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "18"
+      },
+      {
+        "name": "GALI",
+        "newResult": "26"
+      }
+    ]
+  },
+  {
+    "date": 20,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "05"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "35"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "59"
+      },
+      {
+        "name": "GALI",
+        "newResult": "13"
+      }
+    ]
+  },
+  {
+    "date": 21,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "94"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "23"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "49"
+      },
+      {
+        "name": "GALI",
+        "newResult": "36"
+      }
+    ]
+  },
+  {
+    "date": 22,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "28"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "99"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "55"
+      },
+      {
+        "name": "GALI",
+        "newResult": "07"
+      }
+    ]
+  },
+  {
+    "date": 23,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "23"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "21"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "26"
+      },
+      {
+        "name": "GALI",
+        "newResult": "24"
+      }
+    ]
+  },
+  {
+    "date": 24,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "77"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "70"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "55"
+      },
+      {
+        "name": "GALI",
+        "newResult": "95"
+      }
+    ]
+  },
+  {
+    "date": 25,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "48"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "33"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "00"
+      },
+      {
+        "name": "GALI",
+        "newResult": "65"
+      }
+    ]
+  },
+  {
+    "date": 26,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "55"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "82"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "59"
+      },
+      {
+        "name": "GALI",
+        "newResult": "59"
+      }
+    ]
+  },
+  {
+    "date": 27,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "37"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "12"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "50"
+      },
+      {
+        "name": "GALI",
+        "newResult": "12"
+      }
+    ]
+  },
+  {
+    "date": 28,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "04"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "89"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "75"
+      },
+      {
+        "name": "GALI",
+        "newResult": "17"
+      }
+    ]
+  },
+  {
+    "date": 29,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "35"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "85"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "20"
+      },
+      {
+        "name": "GALI",
+        "newResult": "74"
+      }
+    ]
+  },
+  {
+    "date": 30,
+    "games": [
+      {
+        "name": "DESAWAR",
+        "newResult": "79"
+      },
+      {
+        "name": "FARIDABAD",
+        "newResult": "XX"
+      },
+      {
+        "name": "GHAZIABAD",
+        "newResult": "XX"
+      },
+      {
+        "name": "GALI",
+        "newResult": "XX"
+      }
+    ]
+  }
+]
