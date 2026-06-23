@@ -43,9 +43,13 @@ jobs:
       run: |
         cd scraper
         node scraper.js
-        node generate-sitemap.js
       env:
         NODE_ENV: production
+        
+    - name: 🗺️ Generate Sitemap
+      run: |
+        cd scraper
+        node generate-sitemap.js
         
     - name: 📊 Commit and push results
       run: |
