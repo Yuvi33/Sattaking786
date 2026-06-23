@@ -32,7 +32,8 @@ async function generateSitemap() {
                 const [year, month] = file.replace('.json', '').split('-');
                 if (year && month) {
                     GAMES.forEach(game => {
-                        urls.push(`${BASE_URL}/game.html?name=${game}&year=${year}&month=${month}`);
+                        // XML requires & to be written as &amp;
+                        urls.push(`${BASE_URL}/game.html?name=${game}&amp;year=${year}&amp;month=${month}`);
                         historyUrlsAdded++;
                     });
                 }
