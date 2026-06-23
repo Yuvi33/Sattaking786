@@ -27,7 +27,7 @@ function extractResults(html) {
   console.log(`📄 Page Title extracted: "${pageTitle}"`);
 
   if (pageTitle.includes('Just a moment') || pageTitle.includes('Attention Required')) {
-    throw new Error('Cloudflare block detected. Triggering retry...');
+    throw new Error('Cloudflare block detected.');
   }
 
   const pageText = $('body').text().replace(/\s+/g, ' ').toUpperCase();
@@ -46,18 +46,10 @@ function extractResults(html) {
     if (match) {
       const oldResult = match[1];
       const newResult = match[2];
-
-      console.log(`✅ Found Official ${game.name} (${game.timing}): Old=${oldResult}, New=${newResult}`);
       results.games.push({
-        name:      game.name,
-        timing:    game.timing,
-        result:    newResult,
-        oldResult: oldResult,
-        newResult: newResult,
-        timestamp: new Date().toISOString()
+        name: game.name, timing: game.timing, result: newResult, 
+        oldResult: oldResult, newResult: newResult, timestamp: new Date().toISOString()
       });
-    } else {
-      console.log(`⚠️  Could not find exact match for ${game.name} at ${game.timing}`);
     }
   });
 
@@ -65,96 +57,100 @@ function extractResults(html) {
 }
 
 async function saveResults(results) {
-  try {
-    await fs.ensureDir(path.dirname(DATA_FILE));
-    await fs.ensureDir(HISTORICAL_DIR);
+  await fs.ensureDir(path.dirname(DATA_FILE));
+  await fs.ensureDir(HISTORICAL_DIR);
 
-    // 🧠 SMART RETRY LOGIC: Compare with existing results
-    let existingData = { games: [] };
-    if (await fs.pathExists(DATA_FILE)) {
-      existingData = await fs.readJson(DATA_FILE);
-    }
+  // 🧠 TIME-AWARE SMART RETRY LOGIC
+  const now = new Date();
+  const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+  const istTotalMinutes = istTime.getUTCHours() * 60 + istTime.getUTCMinutes();
 
-    let hasUpdated = false;
-    for (const newGame of results.games) {
-      const oldGame = existingData.games.find(g => g.name === newGame.name);
-      // If it's a new game, or if the result is different from what we have saved
-      if (!oldGame || oldGame.newResult !== newGame.newResult) {
-        hasUpdated = true;
-        break;
+  const GAME_TIMES = {
+    'DESAWAR': 5 * 60,         // 5:00 AM
+    'FARIDABAD': 18 * 60,      // 6:00 PM
+    'GHAZIABAD': 21 * 60 + 25, // 9:25 PM
+    'GALI': 23 * 60 + 25       // 11:25 PM
+  };
+
+  let waitingForUpdate = false;
+  for (const newGame of results.games) {
+    if (newGame.newResult === 'XX') {
+      const gameTime = GAME_TIMES[newGame.name];
+      // If current time is between 10 mins past result time and 120 mins past
+      if (istTotalMinutes >= gameTime + 10 && istTotalMinutes <= gameTime + 120) {
+        console.log(`⏳ ${newGame.name} is still XX and it's past ${newGame.timing} IST. Triggering retry...`);
+        waitingForUpdate = true;
       }
     }
-
-    // If no results changed, trigger a retry by throwing an error
-    if (!hasUpdated && results.games.length > 0) {
-      throw new Error('Results have not updated on the original website yet. Triggering retry...');
-    }
-
-    await fs.writeJson(DATA_FILE, results, { spaces: 2 });
-
-    // 🛡️ BULLETPROOF IST DATE MATH
-    const now = new Date();
-    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); 
-
-    const today = istTime.getUTCDate();                                  
-    const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');   
-    const year  = istTime.getUTCFullYear();                              
-
-    const monthYear     = `${year}-${month}`;
-    const historicalFile = path.join(HISTORICAL_DIR, `${monthYear}.json`);
-
-    let historicalData = [];
-    if (await fs.pathExists(historicalFile)) {
-      historicalData = await fs.readJson(historicalFile);
-    }
-
-    historicalData = historicalData.map(item => {
-      let dayNum;
-      if (item.timestamp) {
-        const tsDate  = new Date(item.timestamp);
-        const istDate = new Date(tsDate.getTime() + (5.5 * 60 * 60 * 1000));
-        dayNum = istDate.getUTCDate();
-      } else {
-        dayNum = parseInt(item.date, 10);
-      }
-      if (isNaN(dayNum)) dayNum = 0;
-      return { date: dayNum, timestamp: item.timestamp, games: item.games };
-    });
-
-    historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
-    
-    historicalData.push({
-      date:      Number(today),
-      timestamp: results.timestamp,
-      games:     results.games
-    });
-
-    historicalData.sort((a, b) => Number(a.date) - Number(b.date));
-
-    await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
-    console.log(`✅ Results saved for ${monthYear}-${today}. (Duplicates removed & data cleaned)`);
-  } catch (error) {
-    // Re-throw the error so the GitHub Action knows to retry
-    throw error;
   }
+
+  if (waitingForUpdate) {
+    throw new Error('Expected game result is still XX. Triggering retry...');
+  }
+
+  await fs.writeJson(DATA_FILE, results, { spaces: 2 });
+
+  const today = istTime.getUTCDate();
+  const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');
+  const year  = istTime.getUTCFullYear();
+  const monthYear = `${year}-${month}`;
+  const historicalFile = path.join(HISTORICAL_DIR, `${monthYear}.json`);
+
+  let historicalData = [];
+  if (await fs.pathExists(historicalFile)) {
+    historicalData = await fs.readJson(historicalFile);
+  }
+
+  historicalData = historicalData.map(item => {
+    let dayNum;
+    if (item.timestamp) {
+      const tsDate = new Date(item.timestamp);
+      const istDate = new Date(tsDate.getTime() + (5.5 * 60 * 60 * 1000));
+      dayNum = istDate.getUTCDate();
+    } else {
+      dayNum = parseInt(item.date, 10);
+    }
+    if (isNaN(dayNum)) dayNum = 0;
+    return { date: dayNum, timestamp: item.timestamp, games: item.games };
+  });
+
+  historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
+  historicalData.push({ date: Number(today), timestamp: results.timestamp, games: results.games });
+  historicalData.sort((a, b) => Number(a.date) - Number(b.date));
+
+  await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
+  console.log(`✅ Results saved for ${monthYear}-${today}.`);
 }
 
-async function runScraper() {
-  console.log('🚀 Starting Satta King scraper...');
-  try {
-    const html    = await bypassCloudflare(TARGET_URL);
-    const results = extractResults(html);
-    await saveResults(results);
-    console.log(`✅ Scraping completed! Extracted ${results.games.length} games.`);
-    return results;
-  } catch (error) {
-    console.error('❌ Scraping failed:', error.message);
-    throw error;
+async function runScraperWithRetries() {
+  const maxRetries = 4;
+  const waitTimeMs = 5 * 60 * 1000; // 5 minutes
+
+  for (let i = 1; i <= maxRetries; i++) {
+    console.log(`\n=========================================`);
+    console.log(`🚀 Attempt ${i} of ${maxRetries}...`);
+    console.log(`=========================================`);
+    try {
+      const html = await bypassCloudflare(TARGET_URL);
+      const results = extractResults(html);
+      await saveResults(results);
+      console.log(`✅ Attempt ${i} successful!`);
+      return; // Exit function on success
+    } catch (error) {
+      console.error(`❌ Attempt ${i} failed: ${error.message}`);
+      if (i < maxRetries) {
+        console.log(`⏳ Waiting 5 minutes before next retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+      } else {
+        console.error('🚨 All retries exhausted. Failing workflow.');
+        process.exit(1); // Fail the GitHub Action
+      }
+    }
   }
 }
 
 if (require.main === module) {
-  runScraper().then(() => process.exit(0)).catch(() => process.exit(1));
+  runScraperWithRetries();
 }
 
-module.exports = { runScraper, extractResults, saveResults };
+module.exports = { runScraperWithRetries, extractResults, saveResults };
