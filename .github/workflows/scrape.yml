@@ -2,18 +2,12 @@ name: Satta King Scraper
 
 on:
   schedule:
-    # Run 4 times a day, 10 mins AFTER results to ensure target site has updated
-    # Desawar: 05:00 AM IST -> 23:40 UTC (previous day)
     - cron: '40 23 * * *'
-    # Faridabad: 06:00 PM IST -> 12:40 UTC
     - cron: '40 12 * * *'
-    # Ghaziabad: 09:25 PM IST -> 16:05 UTC
     - cron: '5 16 * * *'
-    # Gali: 11:25 PM IST -> 18:05 UTC
     - cron: '5 18 * * *'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
 
-# REQUIRED: Gives the workflow permission to push updates and create deployments
 permissions:
   contents: write
   deployments: write
@@ -55,7 +49,7 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add public/data/results.json public/data/historical/ public/sitemap.xml
+        git add public/data/results.json public/data/historical/ public/sitemap.xml public/data/manifest.json
         git commit -m "🤖 Auto-update results - $(date -u '+%Y-%m-%d %H:%M:%S UTC')" || exit 0
         git push
 
