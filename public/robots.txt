@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sattaking786.pages.dev/sitemap.xml
