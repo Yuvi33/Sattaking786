@@ -70,8 +70,13 @@ async function saveResults(results) {
     await fs.ensureDir(HISTORICAL_DIR);
     await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
-    const date = new Date();
-    const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    // Calculate exact IST date to prevent timezone duplicates
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 mins in ms
+    const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
+    
+    const today = istDate.getDate();
+    const monthYear = `${istDate.getFullYear()}-${(istDate.getMonth() + 1).toString().padStart(2, '0')}`;
     const historicalFile = path.join(HISTORICAL_DIR, `${monthYear}.json`);
 
     let historicalData = [];
@@ -79,17 +84,17 @@ async function saveResults(results) {
       historicalData = await fs.readJson(historicalFile);
     }
 
-    const today = date.getDate();
-    const existingIndex = historicalData.findIndex(item => item.date === today);
-    if (existingIndex >= 0) {
-      historicalData[existingIndex] = { date: today, ...results };
-    } else {
-      historicalData.push({ date: today, ...results });
-    }
+    // PERMANENT DUPLICATE FIX: Remove ANY existing entries for today's date
+    historicalData = historicalData.filter(item => String(item.date) !== String(today));
+    
+    // Add today's fresh result
+    historicalData.push({ date: today, ...results });
 
-    historicalData.sort((a, b) => a.date - b.date);
+    // Sort by date
+    historicalData.sort((a, b) => Number(a.date) - Number(b.date));
+
     await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
-    console.log('✅ Results saved successfully inside public/data/');
+    console.log(`✅ Results saved successfully for ${monthYear}-${today} (Duplicates removed)`);
   } catch (error) {
     console.error('❌ Error saving results:', error);
   }
