@@ -2,18 +2,13 @@ name: Satta King Scraper
 
 on:
   schedule:
-    # Run 4 times a day, 10 mins AFTER results to ensure target site has updated
-    # Desawar: 05:00 AM IST -> 23:40 UTC (previous day)
+    # Run 4 times a day, 10 mins AFTER results
     - cron: '40 23 * * *'
-    # Faridabad: 06:00 PM IST -> 12:40 UTC
     - cron: '40 12 * * *'
-    # Ghaziabad: 09:25 PM IST -> 16:05 UTC
     - cron: '5 16 * * *'
-    # Gali: 11:25 PM IST -> 18:05 UTC
     - cron: '5 18 * * *'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
 
-# REQUIRED: Gives the workflow permission to push updates and create deployments
 permissions:
   contents: write
   deployments: write
@@ -21,7 +16,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # Increased timeout to allow for retries
+    timeout-minutes: 30 # Increased to allow for 5-minute waits inside the script
     
     steps:
     - name: 📥 Checkout repository
@@ -39,15 +34,10 @@ jobs:
         cd scraper
         npm install --no-package-lock
         
-    - name: 🚀 Run scraper (With Auto-Retry)
-      uses: nick-fields/retry@v3
-      with:
-        max_attempts: 4
-        timeout_minutes: 5
-        retry_wait_seconds: 300 # Wait 5 minutes between retries
-        command: |
-          cd scraper
-          node scraper.js
+    - name: 🚀 Run scraper
+      run: |
+        cd scraper
+        node scraper.js
       env:
         NODE_ENV: production
         
