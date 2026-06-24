@@ -46,6 +46,7 @@ function extractResults(html) {
     if (match) {
       const oldResult = match[1];
       const newResult = match[2];
+      console.log(`✅ Found Official ${game.name} (${game.timing}): Old=${oldResult}, New=${newResult}`);
       results.games.push({
         name: game.name, timing: game.timing, result: newResult, 
         oldResult: oldResult, newResult: newResult, timestamp: new Date().toISOString()
@@ -57,6 +58,11 @@ function extractResults(html) {
 }
 
 async function saveResults(results) {
+  // 🚨 CRITICAL DATA PROTECTION: Never save empty data!
+  if (!results.games || results.games.length === 0) {
+    throw new Error('No games extracted. Triggering retry to protect existing data...');
+  }
+
   await fs.ensureDir(path.dirname(DATA_FILE));
   await fs.ensureDir(HISTORICAL_DIR);
 
@@ -76,7 +82,6 @@ async function saveResults(results) {
   for (const newGame of results.games) {
     if (newGame.newResult === 'XX') {
       const gameTime = GAME_TIMES[newGame.name];
-      // If current time is between 10 mins past result time and 120 mins past
       if (istTotalMinutes >= gameTime + 10 && istTotalMinutes <= gameTime + 120) {
         console.log(`⏳ ${newGame.name} is still XX and it's past ${newGame.timing} IST. Triggering retry...`);
         waitingForUpdate = true;
@@ -142,7 +147,7 @@ async function runScraperWithRetries() {
         console.log(`⏳ Waiting 5 minutes before next retry...`);
         await new Promise(resolve => setTimeout(resolve, waitTimeMs));
       } else {
-        console.error('🚨 All retries exhausted. Failing workflow.');
+        console.error('🚨 All retries exhausted. Failing workflow to prevent bad data.');
         process.exit(1); // Fail the GitHub Action
       }
     }
