@@ -70,6 +70,7 @@ async function saveResults(results) {
   const now = new Date();
   const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
   const istTotalMinutes = istTime.getUTCHours() * 60 + istTime.getUTCMinutes();
+  console.log(`🕒 Current IST Time: ${istTime.getUTCHours()}:${String(istTime.getUTCMinutes()).padStart(2, '0')}`);
 
   const GAME_TIMES = {
     'DESAWAR': 5 * 60,         // 5:00 AM
@@ -78,20 +79,45 @@ async function saveResults(results) {
     'GALI': 23 * 60 + 25       // 11:25 PM
   };
 
+  let existingData = { games: [] };
+  if (await fs.pathExists(DATA_FILE)) {
+    existingData = await fs.readJson(DATA_FILE);
+  }
+
   let waitingForUpdate = false;
+  const finalGames = [];
+
   for (const newGame of results.games) {
+    const oldGame = existingData.games.find(g => g.name === newGame.name);
+    
     if (newGame.newResult === 'XX') {
       const gameTime = GAME_TIMES[newGame.name];
-      if (istTotalMinutes >= gameTime + 10 && istTotalMinutes <= gameTime + 120) {
-        console.log(`⏳ ${newGame.name} is still XX and it's past ${newGame.timing} IST. Triggering retry...`);
+      // Expanded window to 4 hours (240 mins) to handle GitHub delays
+      if (istTotalMinutes >= gameTime + 10 && istTotalMinutes <= gameTime + 240) {
+        console.log(`⏳ ${newGame.name} is XX. It's past ${newGame.timing} IST. Triggering retry...`);
         waitingForUpdate = true;
+      } else {
+        // Outside retry window. If we already have a real number, protect it!
+        if (oldGame && oldGame.newResult && oldGame.newResult !== 'XX') {
+          console.log(`🛡️ ${newGame.name} is XX but we already have ${oldGame.newResult}. Keeping old data.`);
+          finalGames.push(oldGame);
+        } else {
+          finalGames.push(newGame);
+        }
       }
+    } else {
+      // Real number found!
+      console.log(`✅ ${newGame.name} updated to ${newGame.newResult}.`);
+      finalGames.push(newGame);
     }
   }
 
   if (waitingForUpdate) {
-    throw new Error('Expected game result is still XX. Triggering retry...');
+    throw new Error('One or more game results are still XX. Triggering retry...');
   }
+
+  // Replace results.games with our protected finalGames
+  results.games = finalGames;
 
   await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
