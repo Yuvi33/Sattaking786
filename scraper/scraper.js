@@ -30,28 +30,47 @@ function extractResults(html) {
     throw new Error('Cloudflare block detected.');
   }
 
-  const pageText = $('body').text().replace(/\s+/g, ' ').toUpperCase();
+  // 🧠 STRICT DOM PARSING: Read the table rows directly to prevent grabbing wrong numbers!
+  $('tr').each((i, el) => {
+    const cells = $(el).find('td');
+    if (cells.length === 0) return; // Skip if not a table row
 
-  GAMES.forEach(game => {
-    const alreadyAdded = results.games.find(g => g.name === game.name);
-    if (alreadyAdded) return;
+    // Get the text from the first cell (contains game name and time)
+    const firstCellText = $(cells[0]).text().toUpperCase().replace(/\s+/g, ' ');
+    
+    GAMES.forEach(game => {
+      // Check if this row is for our game AND has the exact timing
+      if (firstCellText.includes(game.name) && firstCellText.includes('AT') && firstCellText.includes(game.timing)) {
+        
+        // Extract all valid 2-digit numbers or XX from the remaining cells
+        const numbers = [];
+        for (let j = 1; j < cells.length; j++) {
+          const cellText = $(cells[j]).text().trim();
+          if (/^\d{2}$/.test(cellText) || cellText === 'XX') {
+            numbers.push(cellText);
+          }
+        }
 
-    const escapedTiming = game.timing.replace(':', '\\:').replace(/\s+/g, '\\s*');
-    const regex = new RegExp(
-      `${game.name}\\s*AT\\s*${escapedTiming}.*?\\b(\\d{2}|XX)\\b.*?\\b(\\d{2}|XX)\\b`,
-      'i'
-    );
-    const match = pageText.match(regex);
-
-    if (match) {
-      const oldResult = match[1];
-      const newResult = match[2];
-      console.log(`✅ Found Official ${game.name} (${game.timing}): Old=${oldResult}, New=${newResult}`);
-      results.games.push({
-        name: game.name, timing: game.timing, result: newResult, 
-        oldResult: oldResult, newResult: newResult, timestamp: new Date().toISOString()
-      });
-    }
+        // Usually: numbers[0] is Yesterday, numbers[1] is Today
+        if (numbers.length >= 2) {
+          const oldResult = numbers[0];
+          const newResult = numbers[1];
+          console.log(`✅ Found Official ${game.name}: Old=${oldResult}, New=${newResult}`);
+          results.games.push({
+            name: game.name, timing: game.timing, result: newResult, 
+            oldResult: oldResult, newResult: newResult, timestamp: new Date().toISOString()
+          });
+        } else if (numbers.length === 1) {
+          // Fallback if only one column exists
+          const newResult = numbers[0];
+          console.log(`✅ Found Official ${game.name}: New=${newResult}`);
+          results.games.push({
+            name: game.name, timing: game.timing, result: newResult, 
+            oldResult: '--', newResult: newResult, timestamp: new Date().toISOString()
+          });
+        }
+      }
+    });
   });
 
   return results;
@@ -92,12 +111,10 @@ async function saveResults(results) {
     
     if (newGame.newResult === 'XX') {
       const gameTime = GAME_TIMES[newGame.name];
-      // Expanded window to 4 hours (240 mins) to handle GitHub delays
       if (istTotalMinutes >= gameTime + 10 && istTotalMinutes <= gameTime + 240) {
         console.log(`⏳ ${newGame.name} is XX. It's past ${newGame.timing} IST. Triggering retry...`);
         waitingForUpdate = true;
       } else {
-        // Outside retry window. If we already have a real number, protect it!
         if (oldGame && oldGame.newResult && oldGame.newResult !== 'XX') {
           console.log(`🛡️ ${newGame.name} is XX but we already have ${oldGame.newResult}. Keeping old data.`);
           finalGames.push(oldGame);
@@ -106,7 +123,6 @@ async function saveResults(results) {
         }
       }
     } else {
-      // Real number found!
       console.log(`✅ ${newGame.name} updated to ${newGame.newResult}.`);
       finalGames.push(newGame);
     }
@@ -116,9 +132,7 @@ async function saveResults(results) {
     throw new Error('One or more game results are still XX. Triggering retry...');
   }
 
-  // Replace results.games with our protected finalGames
   results.games = finalGames;
-
   await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
   const today = istTime.getUTCDate();
@@ -166,7 +180,7 @@ async function runScraperWithRetries() {
       const results = extractResults(html);
       await saveResults(results);
       console.log(`✅ Attempt ${i} successful!`);
-      return; // Exit function on success
+      return; 
     } catch (error) {
       console.error(`❌ Attempt ${i} failed: ${error.message}`);
       if (i < maxRetries) {
@@ -174,7 +188,7 @@ async function runScraperWithRetries() {
         await new Promise(resolve => setTimeout(resolve, waitTimeMs));
       } else {
         console.error('🚨 All retries exhausted. Failing workflow to prevent bad data.');
-        process.exit(1); // Fail the GitHub Action
+        process.exit(1); 
       }
     }
   }
