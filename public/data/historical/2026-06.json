@@ -708,15 +708,15 @@
   },
   {
     "date": 25,
-    "timestamp": "2026-06-24T19:57:55.170Z",
+    "timestamp": "2026-06-25T00:38:32.758Z",
     "games": [
       {
         "name": "DESAWAR",
         "timing": "05:00 AM",
-        "result": "97",
-        "oldResult": "70",
-        "newResult": "97",
-        "timestamp": "2026-06-24T18:04:44.585Z"
+        "result": "46",
+        "oldResult": "97",
+        "newResult": "46",
+        "timestamp": "2026-06-25T00:38:32.802Z"
       },
       {
         "name": "FARIDABAD",
