@@ -15,13 +15,6 @@ const GAMES = [
   { name: 'GALI',       timing: '11:25 PM' }
 ];
 
-const GAME_TIMES = {
-  'DESAWAR': 5 * 60,         // 5:00 AM
-  'FARIDABAD': 18 * 60,      // 6:00 PM
-  'GHAZIABAD': 21 * 60 + 25, // 9:25 PM
-  'GALI': 23 * 60 + 25       // 11:25 PM
-};
-
 function extractResults(html) {
   const $ = cheerio.load(html);
   const results = {
@@ -37,23 +30,19 @@ function extractResults(html) {
     throw new Error('Cloudflare block detected.');
   }
 
-  // 🧠 STRICT DOM PARSING: Read table rows directly to prevent grabbing wrong numbers!
   $('tr').each((i, el) => {
     const cells = $(el).find('td');
-    if (cells.length < 3) return; // Need at least 3 columns
+    if (cells.length < 3) return;
 
-    // Get the text from the first cell and clean it up
     const firstCellText = $(cells[0]).text().toUpperCase().replace(/\s+/g, ' ').trim();
     
     GAMES.forEach(game => {
-      // Must start exactly with "GALIAT" or "GALI AT" to ignore "Gali Bazar"
       const match1 = game.name + 'AT';
       const match2 = game.name + ' AT';
       
       if (firstCellText.startsWith(match1) || firstCellText.startsWith(match2)) {
-        // Read exact columns
-        const cell1 = $(cells[1]).text().trim(); // Yesterday
-        const cell2 = $(cells[2]).text().trim(); // Today
+        const cell1 = $(cells[1]).text().trim();
+        const cell2 = $(cells[2]).text().trim();
         
         const oldR = (/^\d{2}$/.test(cell1) || cell1 === 'XX') ? cell1 : '--';
         const newR = (/^\d{2}$/.test(cell2) || cell2 === 'XX') ? cell2 : '--';
@@ -70,16 +59,47 @@ function extractResults(html) {
     });
   });
 
+  if (results.games.length === 0) {
+    throw new Error('No games extracted. Website might be down or structure changed.');
+  }
+
   return results;
 }
 
 async function saveResults(results) {
-  if (!results.games || results.games.length === 0) {
-    throw new Error('No games extracted. Cannot save empty data.');
-  }
-
   await fs.ensureDir(path.dirname(DATA_FILE));
   await fs.ensureDir(HISTORICAL_DIR);
+
+  // 🛡️ DATA PROTECTION: Don't overwrite a real number with XX
+  let existingData = { games: [] };
+  if (await fs.pathExists(DATA_FILE)) {
+    existingData = await fs.readJson(DATA_FILE);
+  }
+
+  const finalGames = [];
+  for (const game of GAMES) {
+    const scrapedGame = results.games.find(g => g.name === game.name);
+    const oldGame = existingData.games.find(g => g.name === game.name);
+
+    if (scrapedGame) {
+      if (scrapedGame.newResult === 'XX' && oldGame && oldGame.newResult !== 'XX') {
+        // Keep the old real number, but update the "old" column if needed
+        console.log(`🛡️ Protecting ${game.name}: Keeping ${oldGame.newResult} instead of XX`);
+        finalGames.push({
+          ...oldGame,
+          oldResult: scrapedGame.oldResult !== '--' ? scrapedGame.oldResult : oldGame.oldResult
+        });
+      } else {
+        // Use the newly scraped result
+        finalGames.push(scrapedGame);
+      }
+    } else if (oldGame) {
+      // Keep old if not scraped
+      finalGames.push(oldGame);
+    }
+  }
+
+  results.games = finalGames;
   await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
   // 🛡️ BULLETPROOF IST DATE MATH
@@ -117,72 +137,21 @@ async function saveResults(results) {
   console.log(`✅ Results saved for ${monthYear}-${today}.`);
 }
 
-async function runScraperWithRetries() {
-  const maxRetries = 4;
-  const waitTimeMs = 5 * 60 * 1000; // 5 minutes
-  let lastResults = null;
-
-  for (let i = 1; i <= maxRetries; i++) {
-    console.log(`\n=========================================`);
-    console.log(`🚀 Attempt ${i} of ${maxRetries}...`);
-    console.log(`=========================================`);
-    try {
-      const html = await bypassCloudflare(TARGET_URL);
-      const results = extractResults(html);
-      lastResults = results; // Save what we have so far
-      
-      // Check if we need to retry for any 'XX' results
-      let needsRetry = false;
-      const istTime = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000));
-      const istTotalMinutes = istTime.getUTCHours() * 60 + istTime.getUTCMinutes();
-      
-      for (const game of results.games) {
-        if (game.newResult === 'XX') {
-          const gameTime = GAME_TIMES[game.name];
-          // If it's past the game time, we should retry to see if the website updated
-          if (istTotalMinutes >= gameTime + 10 && istTotalMinutes <= gameTime + 240) {
-            console.log(`⏳ ${game.name} is still XX. Will retry to check for update...`);
-            needsRetry = true;
-          }
-        }
-      }
-      
-      if (!needsRetry) {
-        console.log('✅ All expected results are in! Saving and exiting.');
-        break; // Exit loop, proceed to save
-      } else {
-        if (i < maxRetries) {
-          console.log(`⏳ Waiting 5 minutes before next retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTimeMs));
-        } else {
-          console.log('🚨 Max retries reached. Saving current data (with XX) anyway.');
-        }
-      }
-    } catch (error) {
-      console.error(`❌ Attempt ${i} failed: ${error.message}`);
-      if (i < maxRetries) {
-        console.log(`⏳ Waiting 5 minutes before next retry...`);
-        await new Promise(resolve => setTimeout(resolve, waitTimeMs));
-      } else {
-        if (lastResults) {
-          console.log('🚨 Max retries reached. Saving last known good data.');
-        } else {
-          console.error('🚨 No data extracted at all. Failing workflow.');
-          process.exit(1); 
-        }
-      }
-    }
-  }
-
-  // Save the data at the very end (whether perfect or with XX after retries)
-  if (lastResults) {
-    await saveResults(lastResults);
-    console.log(`✅ Scraping completed! Extracted ${lastResults.games.length} games.`);
+async function runScraper() {
+  console.log('🚀 Starting Satta King scraper...');
+  try {
+    const html = await bypassCloudflare(TARGET_URL);
+    const results = extractResults(html);
+    await saveResults(results);
+    console.log(`✅ Scraping completed! Extracted ${results.games.length} games.`);
+  } catch (error) {
+    console.error('❌ Scraping failed:', error.message);
+    process.exit(1);
   }
 }
 
 if (require.main === module) {
-  runScraperWithRetries();
+  runScraper();
 }
 
-module.exports = { runScraperWithRetries, extractResults, saveResults };
+module.exports = { runScraper, extractResults, saveResults };
