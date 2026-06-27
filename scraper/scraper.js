@@ -60,7 +60,7 @@ function extractResults(html) {
   });
 
   if (results.games.length === 0) {
-    throw new Error('No games extracted. Website might be down or structure changed.');
+    throw new Error('No games extracted. Website might be down or blocked.');
   }
 
   return results;
@@ -83,18 +83,15 @@ async function saveResults(results) {
 
     if (scrapedGame) {
       if (scrapedGame.newResult === 'XX' && oldGame && oldGame.newResult !== 'XX') {
-        // Keep the old real number, but update the "old" column if needed
         console.log(`🛡️ Protecting ${game.name}: Keeping ${oldGame.newResult} instead of XX`);
         finalGames.push({
           ...oldGame,
           oldResult: scrapedGame.oldResult !== '--' ? scrapedGame.oldResult : oldGame.oldResult
         });
       } else {
-        // Use the newly scraped result
         finalGames.push(scrapedGame);
       }
     } else if (oldGame) {
-      // Keep old if not scraped
       finalGames.push(oldGame);
     }
   }
@@ -116,6 +113,7 @@ async function saveResults(results) {
     historicalData = await fs.readJson(historicalFile);
   }
 
+  // 1. Normalize dates using ISO timestamp to prevent string/number bugs
   historicalData = historicalData.map(item => {
     let dayNum;
     if (item.timestamp) {
@@ -129,12 +127,27 @@ async function saveResults(results) {
     return { date: dayNum, timestamp: item.timestamp, games: item.games };
   });
 
+  // 2. 🧹 UNIVERSAL DEDUPLICATION CLEANER (Fixes the 22nd duplicates instantly)
+  // Sort by timestamp descending so we keep the most recent update for each day
+  historicalData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+  
+  const uniqueMap = new Map();
+  for (const item of historicalData) {
+    if (item.date > 0 && !uniqueMap.has(item.date)) {
+      uniqueMap.set(item.date, item);
+    }
+  }
+  historicalData = Array.from(uniqueMap.values());
+
+  // 3. Remove today's entry so we can add the fresh one
   historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
   historicalData.push({ date: Number(today), timestamp: results.timestamp, games: results.games });
+  
+  // Sort by date ascending
   historicalData.sort((a, b) => Number(a.date) - Number(b.date));
 
   await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
-  console.log(`✅ Results saved for ${monthYear}-${today}.`);
+  console.log(`✅ Results saved for ${monthYear}-${today}. (Duplicates cleaned)`);
 }
 
 async function runScraper() {
