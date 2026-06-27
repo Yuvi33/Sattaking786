@@ -2,12 +2,11 @@ name: Satta King Scraper
 
 on:
   schedule:
-    # Run 4 times a day, 10 mins AFTER results
-    - cron: '40 23 * * *'
-    - cron: '40 12 * * *'
-    - cron: '5 16 * * *'
-    - cron: '5 18 * * *'
-  workflow_dispatch:
+    # Run every 25 mins between 4:00 AM and 6:30 AM IST (22:00 - 01:00 UTC)
+    - cron: '*/25 22,23,0,1 * * *'
+    # Run every 25 mins between 4:00 PM and 11:30 PM IST (10:30 - 18:00 UTC)
+    - cron: '*/25 10-18 * * *'
+  workflow_dispatch: # Allow manual triggering
 
 permissions:
   contents: write
@@ -16,7 +15,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # Increased to allow for 5-minute waits inside the script
+    timeout-minutes: 15 # Reduced timeout since we aren't waiting 5 mins inside the script anymore
     
     steps:
     - name: 📥 Checkout repository
