@@ -670,15 +670,15 @@
   },
   {
     "date": 28,
-    "timestamp": "2026-06-27T23:01:59.635Z",
+    "timestamp": "2026-06-28T00:33:34.546Z",
     "games": [
       {
         "name": "DESAWAR",
         "timing": "05:00 AM",
-        "result": "60",
+        "result": "17",
         "oldResult": "60",
-        "newResult": "60",
-        "timestamp": "2026-06-27T17:35:55.097Z"
+        "newResult": "17",
+        "timestamp": "2026-06-28T00:33:34.593Z"
       },
       {
         "name": "FARIDABAD",
@@ -702,7 +702,7 @@
         "result": "XX",
         "oldResult": "00",
         "newResult": "XX",
-        "timestamp": "2026-06-27T23:01:59.668Z"
+        "timestamp": "2026-06-28T00:33:34.602Z"
       }
     ]
   }
