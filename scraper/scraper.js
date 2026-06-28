@@ -16,10 +16,10 @@ const GAMES = [
 ];
 
 const GAME_TIMES = {
-  'DESAWAR': 5 * 60,         // 5:00 AM
-  'FARIDABAD': 18 * 60,      // 6:00 PM
-  'GHAZIABAD': 21 * 60 + 25, // 9:25 PM
-  'GALI': 23 * 60 + 25       // 11:25 PM
+  'DESAWAR': 5 * 60,         
+  'FARIDABAD': 18 * 60,      
+  'GHAZIABAD': 21 * 60 + 25, 
+  'GALI': 23 * 60 + 25       
 };
 
 function extractResults(html) {
@@ -31,18 +31,14 @@ function extractResults(html) {
   };
 
   const pageTitle = $('title').text();
-  console.log(`📄 Page Title extracted: "${pageTitle}"`);
-
   if (pageTitle.includes('Just a moment') || pageTitle.includes('Attention Required')) {
     throw new Error('Cloudflare block detected.');
   }
 
-  // Get current IST time in minutes
   const now = new Date();
   const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
   const istTotalMinutes = istTime.getUTCHours() * 60 + istTime.getUTCMinutes();
 
-  // 🧠 DYNAMIC ROW SCANNER
   $('tr').each((i, el) => {
     const cells = $(el).find('td');
     if (cells.length === 0) return;
@@ -64,25 +60,19 @@ function extractResults(html) {
 
         let oldR = '--';
         let newR = '--';
-        
         const gameTime = GAME_TIMES[game.name];
         const isGameTimePassed = istTotalMinutes >= gameTime;
 
         if (foundNumbers.length >= 2) {
           oldR = foundNumbers[0];
           newR = foundNumbers[1];
-          
-          // 🛡️ FIX: If game hasn't happened yet, don't copy yesterday's result into today!
           if (!isGameTimePassed && oldR === newR) {
             newR = 'XX';
           }
         } else if (foundNumbers.length === 1) {
           if (isGameTimePassed) {
-            // Game happened, only one number visible. Assume it's today's.
             newR = foundNumbers[0];
-            oldR = '--';
           } else {
-            // Game hasn't happened. The number is yesterday's.
             oldR = foundNumbers[0];
             newR = 'XX';
           }
@@ -90,7 +80,6 @@ function extractResults(html) {
 
         const exists = results.games.find(g => g.name === game.name);
         if (!exists) {
-          console.log(`✅ Found Official ${game.name}: Old=${oldR}, New=${newR}`);
           results.games.push({
             name: game.name, timing: game.timing, result: newR, 
             oldResult: oldR, newResult: newR, timestamp: new Date().toISOString()
@@ -101,7 +90,7 @@ function extractResults(html) {
   });
 
   if (results.games.length === 0) {
-    throw new Error('No games extracted. Website might be down or blocked.');
+    throw new Error('No games extracted.');
   }
 
   return results;
@@ -111,7 +100,6 @@ async function saveResults(results) {
   await fs.ensureDir(path.dirname(DATA_FILE));
   await fs.ensureDir(HISTORICAL_DIR);
 
-  // 🛡️ DATA PROTECTION: Don't overwrite a real number with XX (unless it's a new day)
   let existingData = { games: [] };
   if (await fs.pathExists(DATA_FILE)) {
     existingData = await fs.readJson(DATA_FILE);
@@ -130,15 +118,9 @@ async function saveResults(results) {
 
     if (scrapedGame) {
       if (scrapedGame.newResult === 'XX' && oldGame && oldGame.newResult !== 'XX') {
-        // Only protect the old number if the game has ALREADY PASSED today (prevents glitches)
         if (isGameTimePassed) {
-          console.log(`🛡️ Protecting ${game.name}: Keeping ${oldGame.newResult} instead of XX`);
-          finalGames.push({
-            ...oldGame,
-            oldResult: scrapedGame.oldResult !== '--' ? scrapedGame.oldResult : oldGame.oldResult
-          });
+          finalGames.push({ ...oldGame, oldResult: scrapedGame.oldResult !== '--' ? scrapedGame.oldResult : oldGame.oldResult });
         } else {
-          // Game hasn't happened yet today. Allow XX to replace yesterday's number.
           finalGames.push(scrapedGame);
         }
       } else {
@@ -152,7 +134,6 @@ async function saveResults(results) {
   results.games = finalGames;
   await fs.writeJson(DATA_FILE, results, { spaces: 2 });
 
-  // 🛡️ BULLETPROOF IST DATE MATH
   const today = istTime.getUTCDate();
   const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');
   const year  = istTime.getUTCFullYear();
@@ -164,7 +145,6 @@ async function saveResults(results) {
     historicalData = await fs.readJson(historicalFile);
   }
 
-  // 1. Normalize dates
   historicalData = historicalData.map(item => {
     let dayNum;
     if (item.timestamp) {
@@ -178,7 +158,31 @@ async function saveResults(results) {
     return { date: dayNum, timestamp: item.timestamp, games: item.games };
   });
 
-  // 2. 🧹 UNIVERSAL DEDUPLICATION CLEANER
+  // 🔄 YESTERDAY REPAIR LOGIC
+  // If today's result is XX, the 'oldResult' is yesterday's final result. Let's fix yesterday's chart!
+  const yesterdayDate = new Date(istTime.getTime() - (24 * 60 * 60 * 1000));
+  const yesterdayDay = yesterdayDate.getUTCDate();
+  const yesterdayMonth = String(yesterdayDate.getUTCMonth() + 1).padStart(2, '0');
+  const yesterdayYear = yesterdayDate.getUTCFullYear();
+  const yesterdayMonthYear = `${yesterdayYear}-${yesterdayMonth}`;
+  
+  if (yesterdayMonthYear === monthYear) {
+    const yesterdayEntry = historicalData.find(item => Number(item.date) === Number(yesterdayDay));
+    if (yesterdayEntry) {
+      for (const game of finalGames) {
+        if (game.newResult === 'XX' && game.oldResult !== 'XX' && game.oldResult !== '--') {
+          const yGame = yesterdayEntry.games.find(g => g.name === game.name);
+          if (yGame && (yGame.newResult === 'XX' || yGame.newResult === '--')) {
+            console.log(`🔧 Repairing ${game.name} for date ${yesterdayDay}: Setting to ${game.oldResult}`);
+            yGame.newResult = game.oldResult;
+            yGame.result = game.oldResult;
+          }
+        }
+      }
+    }
+  }
+
+  // Deduplication Cleaner
   historicalData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
   const uniqueMap = new Map();
   for (const item of historicalData) {
@@ -188,13 +192,12 @@ async function saveResults(results) {
   }
   historicalData = Array.from(uniqueMap.values());
 
-  // 3. Remove today's entry so we can add the fresh one
   historicalData = historicalData.filter(item => Number(item.date) !== Number(today));
   historicalData.push({ date: Number(today), timestamp: results.timestamp, games: results.games });
   historicalData.sort((a, b) => Number(a.date) - Number(b.date));
 
   await fs.writeJson(historicalFile, historicalData, { spaces: 2 });
-  console.log(`✅ Results saved for ${monthYear}-${today}. (Duplicates cleaned)`);
+  console.log(`✅ Results saved for ${monthYear}-${today}. (Yesterday repaired if needed)`);
 }
 
 async function runScraper() {
