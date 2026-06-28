@@ -30,9 +30,10 @@ function extractResults(html) {
     throw new Error('Cloudflare block detected.');
   }
 
+  // 🧠 DYNAMIC ROW SCANNER: Ignores columns and links, only grabs actual 2-digit numbers!
   $('tr').each((i, el) => {
     const cells = $(el).find('td');
-    if (cells.length < 3) return;
+    if (cells.length === 0) return;
 
     const firstCellText = $(cells[0]).text().toUpperCase().replace(/\s+/g, ' ').trim();
     
@@ -41,12 +42,27 @@ function extractResults(html) {
       const match2 = game.name + ' AT';
       
       if (firstCellText.startsWith(match1) || firstCellText.startsWith(match2)) {
-        const cell1 = $(cells[1]).text().trim();
-        const cell2 = $(cells[2]).text().trim();
+        // Scan all cells in this row for valid 2-digit numbers or XX
+        const foundNumbers = [];
+        for (let j = 1; j < cells.length; j++) {
+          const cellText = $(cells[j]).text().trim();
+          // Only push if it's exactly a 2-digit number or "XX"
+          if (/^\d{2}$/.test(cellText) || cellText === 'XX') {
+            foundNumbers.push(cellText);
+          }
+        }
+
+        // Assign the first found number to Old, and the second to New
+        let oldR = '--';
+        let newR = '--';
         
-        const oldR = (/^\d{2}$/.test(cell1) || cell1 === 'XX') ? cell1 : '--';
-        const newR = (/^\d{2}$/.test(cell2) || cell2 === 'XX') ? cell2 : '--';
-        
+        if (foundNumbers.length >= 2) {
+          oldR = foundNumbers[0];
+          newR = foundNumbers[1];
+        } else if (foundNumbers.length === 1) {
+          newR = foundNumbers[0];
+        }
+
         const exists = results.games.find(g => g.name === game.name);
         if (!exists) {
           console.log(`✅ Found Official ${game.name}: Old=${oldR}, New=${newR}`);
@@ -127,8 +143,7 @@ async function saveResults(results) {
     return { date: dayNum, timestamp: item.timestamp, games: item.games };
   });
 
-  // 2. 🧹 UNIVERSAL DEDUPLICATION CLEANER (Fixes the 22nd duplicates instantly)
-  // Sort by timestamp descending so we keep the most recent update for each day
+  // 2. 🧹 UNIVERSAL DEDUPLICATION CLEANER
   historicalData.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
   
   const uniqueMap = new Map();
