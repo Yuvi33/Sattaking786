@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-08-29T14:55:16.728Z",
-  "time": "8:25:16 PM",
+  "timestamp": "2026-08-29T18:08:47.423Z",
+  "time": "11:38:47 PM",
   "games": [
     {
       "name": "DESAWAR",
@@ -8,7 +8,7 @@
       "result": "31",
       "oldResult": "27",
       "newResult": "31",
-      "timestamp": "2026-08-29T14:55:17.459Z"
+      "timestamp": "2026-08-29T18:08:47.705Z"
     },
     {
       "name": "FARIDABAD",
@@ -16,23 +16,23 @@
       "result": "62",
       "oldResult": "23",
       "newResult": "62",
-      "timestamp": "2026-08-29T14:55:17.460Z"
+      "timestamp": "2026-08-29T18:08:47.707Z"
     },
     {
       "name": "GHAZIABAD",
       "timing": "09:25 PM",
-      "result": "XX",
+      "result": "64",
       "oldResult": "59",
-      "newResult": "XX",
-      "timestamp": "2026-08-29T14:55:17.459Z"
+      "newResult": "64",
+      "timestamp": "2026-08-29T18:08:47.705Z"
     },
     {
       "name": "GALI",
       "timing": "11:25 PM",
-      "result": "XX",
+      "result": "86",
       "oldResult": "86",
-      "newResult": "XX",
-      "timestamp": "2026-08-29T14:55:17.459Z"
+      "newResult": "86",
+      "timestamp": "2026-08-29T18:08:47.705Z"
     }
   ]
 }
